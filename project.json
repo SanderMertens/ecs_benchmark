@@ -1,0 +1,14 @@
+{
+    "id": "ecs_benchmark",
+    "type": "application",
+    "value": {
+        "author": "Sander Mertens",
+        "description": "ECS benchmark comparison",
+        "language": "c++",
+        "use": ["reflecs", "bake.util"]
+    },
+    "lang.cpp": {
+        "include": ["/usr/local/include/entt"],
+        "cpp-standard": "c++17"
+    }
+}
