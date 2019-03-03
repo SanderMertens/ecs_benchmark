@@ -307,6 +307,7 @@ double bench_iter_two_entt_group(int n, int n_iter) {
 
 double bench_iter_three_two_types_entt_group(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
+    ecs.group<Position, Velocity, Mass>();
 
     for(std::uint64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
@@ -424,7 +425,7 @@ double bench_iter_three_eight_types_entt_view(int n, int n_iter, bool match_all)
 
 double bench_iter_two_eight_types_entt_group(int n, int n_iter, bool match_all) {
     entt::registry<std::uint64_t> ecs;
-    ecs.group<Position, Velocity, Mass>();
+    ecs.group<Position, Velocity>();
 
     int count = n * (2 - match_all);
 
@@ -477,3 +478,129 @@ double bench_iter_four_eight_types_entt_group(int n, int n_iter, bool match_all)
     });
 }
 
+void create_pathological(entt::registry<std::uint64_t> &ecs, std::vector< std::vector <int>> entity_list) {
+
+    for (std::vector<int> &component_list: entity_list) {
+        const auto e = ecs.create();
+        ecs.assign<Position>(e);
+        ecs.assign<Velocity>(e);
+        ecs.assign<Mass>(e);
+        ecs.assign<Damage>(e);
+
+        for (int c: component_list) {
+            switch(c) {
+            case 0:
+                ecs.assign<Stamina>(e);
+                break;
+            case 1:
+                ecs.assign<Strength>(e);
+                break;
+            case 2:
+                ecs.assign<Agility>(e);
+                break;
+            case 3:
+                ecs.assign<Intelligence>(e);
+                break;
+            case 4:
+                ecs.assign<Color>(e);
+                break;
+            case 5:
+                ecs.assign<Battery>(e);
+                break;
+            case 6:
+                ecs.assign<Rotation>(e);
+                break;
+            case 7:
+                ecs.assign<Health>(e);
+                break;
+            case 8:
+                ecs.assign<Attack>(e);
+                break;
+            case 9:
+                ecs.assign<Defense>(e);
+                break;
+            }
+        }
+    }
+}
+
+
+double bench_iter_one_pathological_entt(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_view<Position>(ecs, n_iter, [](auto &p) {
+        p.x ++;
+        p.y ++;
+    });
+}
+
+double bench_iter_two_pathological_entt_view(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_view<Position, Velocity>(ecs, n_iter, [](auto &p, auto &v) {
+        p.x += v.x;
+        p.y += v.y;
+    });
+}
+
+double bench_iter_two_pathological_entt_group(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+    ecs.group<Position, Velocity>();
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_group<Position, Velocity>(ecs, n_iter, [](auto &p, auto &v) {
+        p.x += v.x;
+        p.y += v.y;
+    });
+}
+
+double bench_iter_three_pathological_entt_view(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_view<Position, Velocity, Mass>(ecs, n_iter, [](auto &p, auto &v, auto &m) {
+        p.x += v.x / m.value;
+        p.y += v.y / m.value;
+    });
+}
+
+double bench_iter_three_pathological_entt_group(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+    ecs.group<Position, Velocity, Mass>();
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_group<Position, Velocity, Mass>(ecs, n_iter, [](auto &p, auto &v, auto &m) {
+        p.x += v.x / m.value;
+        p.y += v.y / m.value;
+    });
+}
+
+double bench_iter_four_pathological_entt_view(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_view<Position, Velocity, Mass, Damage>(ecs, n_iter, [](auto &p, auto &v, auto &m, auto &d) {
+        p.x += v.x / m.value / d.value;
+        p.y += v.y / m.value / d.value;
+    });
+}
+
+double bench_iter_four_pathological_entt_group(int n_iter, std::vector< std::vector<int>> entity_list) {
+    entt::registry<std::uint64_t> ecs;
+    ecs.group<Position, Velocity, Mass, Damage>();
+
+    create_pathological(ecs, entity_list);
+
+    return iterate_group<Position, Velocity, Mass, Damage>(ecs, n_iter, [](auto &p, auto &v, auto &m, auto &d) {
+        p.x += v.x / m.value / d.value;
+        p.y += v.y / m.value / d.value;
+    });
+}

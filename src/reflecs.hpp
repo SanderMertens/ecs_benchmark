@@ -650,6 +650,110 @@ void create_pathological(EcsWorld *world, std::vector< std::vector <int>> entity
     ECS_COMPONENT(world, Color);
     ECS_COMPONENT(world, Battery);
     ECS_COMPONENT(world, Damage);
+    ECS_COMPONENT(world, Health);
+    ECS_COMPONENT(world, Attack);
+    ECS_COMPONENT(world, Defense);
+    ECS_COMPONENT(world, Stamina);
+    ECS_COMPONENT(world, Strength);
+    ECS_COMPONENT(world, Agility);
+    ECS_COMPONENT(world, Intelligence);
 
-    
+    for (std::vector<int> &component_list: entity_list) {
+        EcsEntity e = ecs_new(world, 0);
+        ecs_add(world, e, Position);
+        ecs_add(world, e, Velocity);
+        ecs_add(world, e, Mass);
+        ecs_add(world, e, Damage);
+
+        for (int c: component_list) {
+            switch(c) {
+            case 0:
+                ecs_add(world, e, Stamina);
+                break;
+            case 1:
+                ecs_add(world, e, Strength);
+                break;
+            case 2:
+                ecs_add(world, e, Agility);
+                break;
+            case 3:
+                ecs_add(world, e, Intelligence);
+                break;
+            case 4:
+                ecs_add(world, e, Color);
+                break;
+            case 5:
+                ecs_add(world, e, Battery);
+                break;
+            case 6:
+                ecs_add(world, e, Rotation);
+                break;
+            case 7:
+                ecs_add(world, e, Health);
+                break;
+            case 8:
+                ecs_add(world, e, Attack);
+                break;
+            case 9:
+                ecs_add(world, e, Defense);
+                break;
+            }
+        }
+    }
+}
+
+double bench_iter_one_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+    EcsWorld *world = ecs_init();
+
+    create_pathological(world, entity_list);
+
+    ECS_SYSTEM(world, IterOne, EcsOnFrame, Position);
+
+    double result = iterate(world, n_iter);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_iter_two_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+    EcsWorld *world = ecs_init();
+
+    create_pathological(world, entity_list);
+
+    ECS_SYSTEM(world, IterTwo, EcsOnFrame, Position, Velocity);
+
+    double result = iterate(world, n_iter);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_iter_three_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+    EcsWorld *world = ecs_init();
+
+    create_pathological(world, entity_list);
+
+    ECS_SYSTEM(world, IterThree, EcsOnFrame, Position, Velocity, Mass);
+
+    double result = iterate(world, n_iter);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_iter_four_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+    EcsWorld *world = ecs_init();
+
+    create_pathological(world, entity_list);
+
+    ECS_SYSTEM(world, IterFour, EcsOnFrame, Position, Velocity, Mass, Damage);
+
+    double result = iterate(world, n_iter);
+
+    ecs_fini(world);
+
+    return result;
 }

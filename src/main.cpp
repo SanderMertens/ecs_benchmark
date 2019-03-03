@@ -1,7 +1,7 @@
 #include <include/ecs_benchmark.h>
 
 #define N_ENTITIES (1000000)
-#define N_ITERATIONS (1000)
+#define N_ITERATIONS (1)
 
 #define REFLECS
 #define ENTT
@@ -41,6 +41,35 @@ struct Battery {
 struct Damage {
     float value;
 };
+
+struct Health {
+    float value;
+};
+
+struct Attack {
+    float value;
+};
+
+struct Defense {
+    float value;
+};
+
+struct Stamina {
+    float value;
+};
+
+struct Strength {
+    float value;
+};
+
+struct Agility {
+    float value;
+};
+
+struct Intelligence {
+    float value;
+};
+
 
 #ifdef ENTT
 #include "entt.hpp"
@@ -302,7 +331,7 @@ bool coin_toss() {
 }
 
 /* Pathological tests (iteration w/10 randomized components) */
-/*void bench_pathological(int n, int n_iter) {
+void bench_pathological(int n, int n_iter) {
     std::vector< std::vector<int> > entity_list;
 
     for (int i = 0; i < n; i ++) {
@@ -317,26 +346,55 @@ bool coin_toss() {
         entity_list.push_back(component_list);
     }
 
-    bench_start("Pathological", n);
+    bench_start("Pathological, one component, 1024 types", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_iter_pathological(n_iter, entity_list), "(view)");
-    bench_report("EnTT",    bench_iter_pathological(n_iter, entity_list), "(group, owning)");
+    bench_report("EnTT",    bench_iter_one_pathological_entt(n_iter, entity_list), "(view)");
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_pathological(n_iter, entity_list), "");
+    bench_report("Reflecs", bench_iter_one_pathological_reflecs(n_iter, entity_list), "");
     #endif
     bench_stop();
-}*/
+
+    bench_start("Pathological, two components, 1024 types", n);
+    #ifdef ENTT
+    bench_report("EnTT",    bench_iter_two_pathological_entt_view(n_iter, entity_list), "(view)");
+    bench_report("EnTT",    bench_iter_two_pathological_entt_group(n_iter, entity_list), "(group, owning)");
+    #endif
+    #ifdef REFLECS
+    bench_report("Reflecs", bench_iter_two_pathological_reflecs(n_iter, entity_list), "");
+    #endif
+    bench_stop();
+
+    bench_start("Pathological, three components, 1024 types", n);
+    #ifdef ENTT
+    bench_report("EnTT",    bench_iter_three_pathological_entt_view(n_iter, entity_list), "(view)");
+    bench_report("EnTT",    bench_iter_three_pathological_entt_group(n_iter, entity_list), "(group, owning)");
+    #endif
+    #ifdef REFLECS
+    bench_report("Reflecs", bench_iter_three_pathological_reflecs(n_iter, entity_list), "");
+    #endif
+    bench_stop();
+
+    bench_start("Pathological, four components, 1024 types", n);
+    #ifdef ENTT
+    bench_report("EnTT",    bench_iter_four_pathological_entt_view(n_iter, entity_list), "(view)");
+    bench_report("EnTT",    bench_iter_four_pathological_entt_group(n_iter, entity_list), "(group, owning)");
+    #endif
+    #ifdef REFLECS
+    bench_report("Reflecs", bench_iter_four_pathological_reflecs(n_iter, entity_list), "");
+    #endif
+    bench_stop();
+}
 
 int main(int argc, char *argv[]) {
 
-    bench_create(N_ENTITIES);
+    //bench_create(N_ENTITIES);
 
-    bench_add(N_ENTITIES);
+    //bench_add(N_ENTITIES);
 
-    bench_iterate(N_ENTITIES, N_ITERATIONS);
+    //bench_iterate(N_ENTITIES, N_ITERATIONS);
 
-    //bench_pathological(N_ENTITIES, N_ITERATIONS);
+    bench_pathological(N_ENTITIES, N_ITERATIONS);
 
     printf("\n");
 }
