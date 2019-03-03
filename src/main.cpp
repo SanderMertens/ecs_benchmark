@@ -1,6 +1,8 @@
 #include <include/ecs_benchmark.h>
 
 #define N_ENTITIES (1000000)
+#define N_ITERATIONS_CREATE (25)
+#define N_ITERATIONS_ADD (25)
 #define N_ITERATIONS (1000)
 
 #define REFLECS
@@ -78,148 +80,174 @@ struct Intelligence {
 #include "reflecs.hpp"
 #endif
 
+void bench_heading(const char *title) {
+    printf("\n### %s\n", title);
+}
+
 void bench_start(const char *title, unsigned int n) {
-    printf("\n");
-    printf("%s (n = %d):\n", title, n);
-    printf("+---------+------------------------------------+\n");
+    printf("\n---\n");
+    printf("%s (n = %d):\n\n", title, n);
+    printf("| Framework | Measurement                        |\n");
+    printf("|-----------|------------------------------------|\n");
 }
 
 void bench_report(const char *framework, double benchmark, const char *sub) {
-    printf("|%8s |  %f %s %*s|\n", framework, benchmark, sub, (int)(24 - strlen(sub)), "");
+    printf("|%10s |  %f %s %*s|\n", framework, benchmark, sub, (int)(24 - strlen(sub)), "");
 }
 
+#define bench_report_n(framework, benchmark, sub, iter)\
+    result = 0;\
+    for (int i = 0; i < iter; i ++) {\
+        double t = benchmark;\
+        if (!result || result > t) {\
+            result = t;\
+        }\
+    }\
+    bench_report(framework, result, sub);
+
 void bench_stop() {
-    printf("+---------+------------------------------------+\n");
+    printf("\n");
 }
 
 /* Creation tests */
 void bench_create(int n) {
+    double result;
+
+    bench_heading("Creating entities\n");
+
     bench_start("Entity creation, empty", n);
     #ifdef ENTT    
-    bench_report("EnTT",    bench_create_empty_entt(n), "");
+    bench_report_n("EnTT",    bench_create_empty_entt(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef REFLECS 
-    bench_report("Reflecs", bench_create_empty_reflecs(n), "");
+    bench_report_n("Reflecs", bench_create_empty_reflecs(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef ENTT    
-    bench_report("EnTT",    bench_create_empty_entt_batch(n), "(batching)");
+    bench_report_n("EnTT",    bench_create_empty_entt_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
     #ifdef REFLECS 
-    bench_report("Reflecs", bench_create_empty_reflecs_batch(n), "(batching)");
+    bench_report_n("Reflecs", bench_create_empty_reflecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
     bench_start("Entity creation, 1 component", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_create_1component_entt(n), "");
+    bench_report_n("EnTT",    bench_create_1component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_create_1component_reflecs_batch(n), "(batching)");
+    bench_report_n("Reflecs", bench_create_1component_reflecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
     bench_start("Entity creation, 2 component", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_create_2component_entt(n), "");
+    bench_report_n("EnTT",    bench_create_2component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_create_2component_reflecs_batch(n), "(batching, family)");
+    bench_report_n("Reflecs", bench_create_2component_reflecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
     bench_start("Entity creation, 3 component", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_create_3component_entt(n), "");
+    bench_report_n("EnTT",    bench_create_3component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_create_3component_reflecs_batch(n), "(batching, family)");
+    bench_report_n("Reflecs", bench_create_3component_reflecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
     bench_start("Entity deletion, 1 component", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_delete_1component_entt(n), "");
+    bench_report_n("EnTT",    bench_delete_1component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_delete_1component_reflecs(n), "");
+    bench_report_n("Reflecs", bench_delete_1component_reflecs(n), "", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 }
 
 /* Add/Remove tests */
 void bench_add(int n) {
+    double result;
+
+    bench_heading("Adding & removing components\n");
+
     bench_start("Add one component", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_add_one_entt(n), "");
+    bench_report_n("EnTT",    bench_add_one_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_add_one_reflecs(n), "");
-    bench_report("Reflecs", bench_add_one_reflecs_new(n), "(new w/component)");
+    bench_report_n("Reflecs", bench_add_one_reflecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("Reflecs", bench_add_one_reflecs_new(n), "(new w/component)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Add two components", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_add_two_entt(n), "");
+    bench_report_n("EnTT",    bench_add_two_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_add_two_reflecs(n), "");
-    bench_report("Reflecs", bench_add_two_reflecs_family(n), "(add w/family)");
+    bench_report_n("Reflecs", bench_add_two_reflecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("Reflecs", bench_add_two_reflecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Add three components", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_add_three_entt(n), "");
+    bench_report_n("EnTT",    bench_add_three_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_add_three_reflecs(n), "");
-    bench_report("Reflecs", bench_add_three_reflecs_family(n), "(add w/family)");
+    bench_report_n("Reflecs", bench_add_three_reflecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("Reflecs", bench_add_three_reflecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Add four components", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_add_four_entt(n), "");
+    bench_report_n("EnTT",    bench_add_four_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_add_four_reflecs(n), "");
-    bench_report("Reflecs", bench_add_four_reflecs_family(n), "(add w/family)");
+    bench_report_n("Reflecs", bench_add_four_reflecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("Reflecs", bench_add_four_reflecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Remove one component", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_remove_one_entt(n), "");
+    bench_report_n("EnTT",    bench_remove_one_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_remove_one_reflecs(n), "");
+    bench_report_n("Reflecs", bench_remove_one_reflecs(n), "", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Remove two components", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_remove_two_entt(n), "");
+    bench_report_n("EnTT",    bench_remove_two_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_remove_two_reflecs(n), "");
-    bench_report("Reflecs", bench_remove_two_reflecs_family(n), "(remove w/family)");
+    bench_report_n("Reflecs", bench_remove_two_reflecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("Reflecs", bench_remove_two_reflecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Remove three components", n);
     #ifdef ENTT
-    bench_report("EnTT",    bench_remove_three_entt(n), "");
+    bench_report_n("EnTT",    bench_remove_three_entt(n), "", N_ITERATIONS_ADD);
     #endif
     #ifdef REFLECS
-    bench_report("Reflecs", bench_remove_three_reflecs(n), "");
-    bench_report("Reflecs", bench_remove_three_reflecs_family(n), "(remove w/family)");
+    bench_report_n("Reflecs", bench_remove_three_reflecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("Reflecs", bench_remove_three_reflecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 }
 
 /* Iteration tests */
 void bench_iterate(int n, int n_iter) {
+
+    bench_heading("Iterating over entities with systems\n");
+
     bench_start("Iterate, one component", n);
     #ifdef ENTT
     bench_report("EnTT",    bench_iter_one_entt_view(n, n_iter), "(view)");
@@ -332,6 +360,9 @@ bool coin_toss() {
 
 /* Pathological tests (iteration w/10 randomized components) */
 void bench_pathological(int n, int n_iter) {
+
+    bench_heading("Ten randomized components\n");
+
     std::vector< std::vector<int> > entity_list;
 
     for (int i = 0; i < n; i ++) {
