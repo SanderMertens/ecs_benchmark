@@ -388,11 +388,11 @@ void bench_pathological(int n, int n_iter) {
 
 int main(int argc, char *argv[]) {
 
-    //bench_create(N_ENTITIES);
+    bench_create(N_ENTITIES);
 
-    //bench_add(N_ENTITIES);
+    bench_add(N_ENTITIES);
 
-    //bench_iterate(N_ENTITIES, N_ITERATIONS);
+    bench_iterate(N_ENTITIES, N_ITERATIONS);
 
     bench_pathological(N_ENTITIES, N_ITERATIONS);
 
