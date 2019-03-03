@@ -10,6 +10,12 @@ ECS benchmark comparison
  * [EnTT](https://github.com/skypjack/entt)
  * [reflecs](https://github.com/SanderMertens/reflecs)
 
+## Test hardware
+The measurements were obtained on a Macbook Pro 2018 model with a 2.6Ghz Intel i7, and 16GB of memory.
+
+## Testing method
+Each benchmark is isolated in its own function. Any datastructures required for the test are created during test setup, and teared down after the test has finished. Each benchmark is executed multiple times, and only the lowest measurement is reported. This is done to minimize the impact of scheduling, and to make sure measurements are taken when the data is hot (in the CPU cache).
+
 ## Benchmarks
 
 ### Creating entities
