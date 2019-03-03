@@ -10,7 +10,7 @@ ECS benchmark comparison
  * [EnTT](https://github.com/skypjack/entt)
  * [reflecs](https://github.com/SanderMertens/reflecs)
 
-## Test hardware
+## Testing hardware
 The measurements were obtained on a Macbook Pro 2018 model with a 2.6Ghz Intel i7, and 16GB of memory.
 
 ## Testing method
