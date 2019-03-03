@@ -1,7 +1,7 @@
 #include <include/ecs_benchmark.h>
 
 #define N_ENTITIES (1000000)
-#define N_ITERATIONS (1)
+#define N_ITERATIONS (1000)
 
 #define REFLECS
 #define ENTT
