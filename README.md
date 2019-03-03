@@ -3,7 +3,7 @@ ECS benchmark comparison
 
  * [Creating entities](#creating-entities)
  * [Adding & removing components](#adding-removing-components)
- * [Iterating over entities with systems](#iterating-over-systems-with-systems)
+ * [Iterating over entities with systems](#iterating-over-entities-with-systems)
  * [Ten randomized components](#ten-randomized-components)
 
 ## Frameworks
