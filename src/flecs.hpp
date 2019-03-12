@@ -6,7 +6,7 @@ double iterate(EcsWorld *world, int n_iter) {
     for (int i = 0; i < N_ITERATIONS; i ++) {
         struct timespec start; timespec_gettime(&start);
         
-        /* Pass constant time, so reflecs won't request time */
+        /* Pass constant time, so flecs won't request time */
         ecs_progress(world, 1); 
         
         double t = timespec_measure(&start);
@@ -19,7 +19,7 @@ double iterate(EcsWorld *world, int n_iter) {
 }
 
 
-double bench_create_empty_reflecs(int n) {
+double bench_create_empty_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     struct timespec start; timespec_gettime(&start);
@@ -33,7 +33,7 @@ double bench_create_empty_reflecs(int n) {
     return result;
 }
 
-double bench_create_empty_reflecs_batch(int n) {
+double bench_create_empty_flecs_batch(int n) {
     EcsWorld *world = ecs_init();
 
     struct timespec start; timespec_gettime(&start);
@@ -45,7 +45,7 @@ double bench_create_empty_reflecs_batch(int n) {
     return result;
 }
 
-double bench_create_1component_reflecs_batch(int n) {
+double bench_create_1component_flecs_batch(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -59,7 +59,7 @@ double bench_create_1component_reflecs_batch(int n) {
     return result;
 }
 
-double bench_create_2component_reflecs_batch(int n) {
+double bench_create_2component_flecs_batch(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -75,7 +75,7 @@ double bench_create_2component_reflecs_batch(int n) {
     return result;
 }
 
-double bench_create_3component_reflecs_batch(int n) {
+double bench_create_3component_flecs_batch(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -92,7 +92,7 @@ double bench_create_3component_reflecs_batch(int n) {
     return result;
 }
 
-double bench_delete_1component_reflecs(int n) {
+double bench_delete_1component_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -113,7 +113,7 @@ double bench_delete_1component_reflecs(int n) {
     return result;
 }
 
-double bench_add_one_reflecs(int n) {
+double bench_add_one_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -134,7 +134,7 @@ double bench_add_one_reflecs(int n) {
     return result;
 }
 
-double bench_add_one_reflecs_new(int n) {
+double bench_add_one_flecs_new(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -150,7 +150,7 @@ double bench_add_one_reflecs_new(int n) {
     return result;
 }
 
-double bench_add_two_reflecs(int n) {
+double bench_add_two_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -174,7 +174,7 @@ double bench_add_two_reflecs(int n) {
     return result;
 }
 
-double bench_add_two_reflecs_family(int n) {
+double bench_add_two_flecs_family(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -197,7 +197,7 @@ double bench_add_two_reflecs_family(int n) {
     return result;
 }
 
-double bench_add_three_reflecs(int n) {
+double bench_add_three_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -222,7 +222,7 @@ double bench_add_three_reflecs(int n) {
     return result;
 }
 
-double bench_add_three_reflecs_family(int n) {
+double bench_add_three_flecs_family(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -246,7 +246,7 @@ double bench_add_three_reflecs_family(int n) {
     return result;
 }
 
-double bench_add_four_reflecs(int n) {
+double bench_add_four_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -271,7 +271,7 @@ double bench_add_four_reflecs(int n) {
     return result;
 }
 
-double bench_add_four_reflecs_family(int n) {
+double bench_add_four_flecs_family(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -297,7 +297,7 @@ double bench_add_four_reflecs_family(int n) {
 }
 
 
-double bench_remove_one_reflecs(int n) {
+double bench_remove_one_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -316,7 +316,7 @@ double bench_remove_one_reflecs(int n) {
     return result;
 }
 
-double bench_remove_two_reflecs(int n) {
+double bench_remove_two_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -338,7 +338,7 @@ double bench_remove_two_reflecs(int n) {
     return result;
 }
 
-double bench_remove_two_reflecs_family(int n) {
+double bench_remove_two_flecs_family(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -359,7 +359,7 @@ double bench_remove_two_reflecs_family(int n) {
     return result;
 }
 
-double bench_remove_three_reflecs(int n) {
+double bench_remove_three_flecs(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -383,7 +383,7 @@ double bench_remove_three_reflecs(int n) {
     return result;
 }
 
-double bench_remove_three_reflecs_family(int n) {
+double bench_remove_three_flecs_family(int n) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -407,6 +407,15 @@ double bench_remove_three_reflecs_family(int n) {
 
 
 /* -- ITERATION -- */
+
+void IterSmall(EcsRows *rows) {
+    int count = rows->limit;
+    Mass *m = ecs_column(rows, Mass, 1);
+
+    for (int i = 0; i < count; i ++) {
+        m[i].value ++;
+    }
+}
 
 void IterOne(EcsRows *rows) {
     int count = rows->limit;
@@ -454,7 +463,22 @@ void IterFour(EcsRows *rows) {
     }
 }
 
-double bench_iter_one_reflecs(int n, int n_iter) {
+double bench_iter_small_flecs(int n, int n_iter) {
+    EcsWorld *world = ecs_init();
+
+    ECS_COMPONENT(world, Mass);
+    ECS_SYSTEM(world, IterSmall, EcsOnFrame, Mass);
+
+    ecs_new_w_count(world, Mass, n, NULL);
+
+    double result = iterate(world, n_iter);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_iter_one_flecs(int n, int n_iter) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -469,7 +493,7 @@ double bench_iter_one_reflecs(int n, int n_iter) {
     return result;
 }
 
-double bench_iter_two_reflecs(int n, int n_iter) {
+double bench_iter_two_flecs(int n, int n_iter) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -486,7 +510,7 @@ double bench_iter_two_reflecs(int n, int n_iter) {
     return result;
 }
 
-double bench_iter_three_two_types_reflecs(int n, int n_iter) {
+double bench_iter_three_two_types_flecs(int n, int n_iter) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -507,7 +531,7 @@ double bench_iter_three_two_types_reflecs(int n, int n_iter) {
     return result;
 }
 
-double bench_iter_three_reflecs(int n, int n_iter) {
+double bench_iter_three_flecs(int n, int n_iter) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -572,7 +596,7 @@ void create_eight_types(EcsWorld *world, int count, bool match_all) {
     }
 }
 
-double bench_iter_two_eight_types_reflecs(int n, int n_iter, bool match_all) {
+double bench_iter_two_eight_types_flecs(int n, int n_iter, bool match_all) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -595,7 +619,7 @@ double bench_iter_two_eight_types_reflecs(int n, int n_iter, bool match_all) {
     return result;
 }
 
-double bench_iter_three_eight_types_reflecs(int n, int n_iter, bool match_all) {
+double bench_iter_three_eight_types_flecs(int n, int n_iter, bool match_all) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -618,7 +642,7 @@ double bench_iter_three_eight_types_reflecs(int n, int n_iter, bool match_all) {
     return result;
 }
 
-double bench_iter_four_eight_types_reflecs(int n, int n_iter, bool match_all) {
+double bench_iter_four_eight_types_flecs(int n, int n_iter, bool match_all) {
     EcsWorld *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -702,7 +726,7 @@ void create_pathological(EcsWorld *world, std::vector< std::vector <int>> entity
     }
 }
 
-double bench_iter_one_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+double bench_iter_one_pathological_flecs(int n_iter, std::vector< std::vector<int>> entity_list) {
     EcsWorld *world = ecs_init();
 
     create_pathological(world, entity_list);
@@ -716,7 +740,7 @@ double bench_iter_one_pathological_reflecs(int n_iter, std::vector< std::vector<
     return result;
 }
 
-double bench_iter_two_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+double bench_iter_two_pathological_flecs(int n_iter, std::vector< std::vector<int>> entity_list) {
     EcsWorld *world = ecs_init();
 
     create_pathological(world, entity_list);
@@ -730,7 +754,7 @@ double bench_iter_two_pathological_reflecs(int n_iter, std::vector< std::vector<
     return result;
 }
 
-double bench_iter_three_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+double bench_iter_three_pathological_flecs(int n_iter, std::vector< std::vector<int>> entity_list) {
     EcsWorld *world = ecs_init();
 
     create_pathological(world, entity_list);
@@ -744,7 +768,7 @@ double bench_iter_three_pathological_reflecs(int n_iter, std::vector< std::vecto
     return result;
 }
 
-double bench_iter_four_pathological_reflecs(int n_iter, std::vector< std::vector<int>> entity_list) {
+double bench_iter_four_pathological_flecs(int n_iter, std::vector< std::vector<int>> entity_list) {
     EcsWorld *world = ecs_init();
 
     create_pathological(world, entity_list);

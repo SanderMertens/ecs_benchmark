@@ -5,7 +5,7 @@
 #define N_ITERATIONS_ADD (25)
 #define N_ITERATIONS (1000)
 
-#define REFLECS
+#define FLECS
 #define ENTT
 
 /* -- Components -- */
@@ -76,8 +76,8 @@ struct Intelligence {
 #ifdef ENTT
 #include "entt.hpp"
 #endif
-#ifdef REFLECS
-#include "reflecs.hpp"
+#ifdef FLECS
+#include "flecs.hpp"
 #endif
 
 void bench_heading(const char *title) {
@@ -119,14 +119,14 @@ void bench_create(int n) {
     #ifdef ENTT    
     bench_report_n("EnTT",    bench_create_empty_entt(n), "", N_ITERATIONS_CREATE);
     #endif
-    #ifdef REFLECS 
-    bench_report_n("Reflecs", bench_create_empty_reflecs(n), "", N_ITERATIONS_CREATE);
+    #ifdef FLECS 
+    bench_report_n("  Flecs", bench_create_empty_flecs(n), "", N_ITERATIONS_CREATE);
     #endif
     #ifdef ENTT    
     bench_report_n("EnTT",    bench_create_empty_entt_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
-    #ifdef REFLECS 
-    bench_report_n("Reflecs", bench_create_empty_reflecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    #ifdef FLECS 
+    bench_report_n("  Flecs", bench_create_empty_flecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
@@ -134,8 +134,8 @@ void bench_create(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_create_1component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_create_1component_reflecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_create_1component_flecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
@@ -143,8 +143,8 @@ void bench_create(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_create_2component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_create_2component_reflecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_create_2component_flecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
@@ -152,8 +152,8 @@ void bench_create(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_create_3component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_create_3component_reflecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_create_3component_flecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
@@ -161,8 +161,8 @@ void bench_create(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_delete_1component_entt(n), "", N_ITERATIONS_CREATE);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_delete_1component_reflecs(n), "", N_ITERATIONS_CREATE);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_delete_1component_flecs(n), "", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 }
@@ -177,9 +177,9 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_one_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_add_one_reflecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("Reflecs", bench_add_one_reflecs_new(n), "(new w/component)", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_add_one_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_one_flecs_new(n), "(new w/component)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
@@ -187,9 +187,9 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_two_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_add_two_reflecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("Reflecs", bench_add_two_reflecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_add_two_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_two_flecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
@@ -197,9 +197,9 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_three_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_add_three_reflecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("Reflecs", bench_add_three_reflecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_add_three_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_three_flecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
@@ -207,9 +207,9 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_four_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_add_four_reflecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("Reflecs", bench_add_four_reflecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_add_four_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_four_flecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
@@ -217,8 +217,8 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_remove_one_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_remove_one_reflecs(n), "", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_remove_one_flecs(n), "", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
@@ -226,9 +226,9 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_remove_two_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_remove_two_reflecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("Reflecs", bench_remove_two_reflecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_remove_two_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_two_flecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
@@ -236,9 +236,9 @@ void bench_add(int n) {
     #ifdef ENTT
     bench_report_n("EnTT",    bench_remove_three_entt(n), "", N_ITERATIONS_ADD);
     #endif
-    #ifdef REFLECS
-    bench_report_n("Reflecs", bench_remove_three_reflecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("Reflecs", bench_remove_three_reflecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_remove_three_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_three_flecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 }
@@ -248,12 +248,22 @@ void bench_iterate(int n, int n_iter) {
 
     bench_heading("Iterating over entities with systems\n");
 
+    bench_start("Iterate, small component", n);
+    #ifdef ENTT
+    bench_report("EnTT",    bench_iter_small_entt_view(n, n_iter), "(view)");
+    #endif
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_small_flecs(n, n_iter), "");
+    #endif
+    bench_stop();
+
+
     bench_start("Iterate, one component", n);
     #ifdef ENTT
     bench_report("EnTT",    bench_iter_one_entt_view(n, n_iter), "(view)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_one_reflecs(n, n_iter), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_one_flecs(n, n_iter), "");
     #endif
     bench_stop();
 
@@ -262,8 +272,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_two_entt_view(n, n_iter), "(view)");
     bench_report("EnTT",    bench_iter_two_entt_group(n, n_iter), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_two_reflecs(n, n_iter), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_two_flecs(n, n_iter), "");
     #endif
     bench_stop();
 
@@ -272,8 +282,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_two_eight_types_entt_view(n, n_iter, true), "(view)");
     bench_report("EnTT",    bench_iter_two_eight_types_entt_group(n, n_iter, true), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_two_eight_types_reflecs(n, n_iter, true), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_two_eight_types_flecs(n, n_iter, true), "");
     #endif
     bench_stop();
 
@@ -282,8 +292,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_two_eight_types_entt_view(n, n_iter, false), "(view)");
     bench_report("EnTT",    bench_iter_two_eight_types_entt_group(n, n_iter, false), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_two_eight_types_reflecs(n, n_iter, false), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_two_eight_types_flecs(n, n_iter, false), "");
     #endif
     bench_stop();
 
@@ -292,8 +302,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_three_entt_view(n, n_iter), "(view)");
     bench_report("EnTT",    bench_iter_three_entt_group(n, n_iter), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_three_reflecs(n, n_iter), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_three_flecs(n, n_iter), "");
     #endif
     bench_stop();
 
@@ -302,8 +312,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_three_two_types_entt_view(n, n_iter), "(view)");
     bench_report("EnTT",    bench_iter_three_two_types_entt_group(n, n_iter), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_three_two_types_reflecs(n, n_iter), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_three_two_types_flecs(n, n_iter), "");
     #endif
     bench_stop();
 
@@ -312,8 +322,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_three_eight_types_entt_view(n, n_iter, true), "(view)");
     bench_report("EnTT",    bench_iter_three_eight_types_entt_group(n, n_iter, true), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_three_eight_types_reflecs(n, n_iter, true), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_three_eight_types_flecs(n, n_iter, true), "");
     #endif
     bench_stop();
 
@@ -322,8 +332,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_three_eight_types_entt_view(n, n_iter, false), "(view)");
     bench_report("EnTT",    bench_iter_three_eight_types_entt_group(n, n_iter, false), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_three_eight_types_reflecs(n, n_iter, false), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_three_eight_types_flecs(n, n_iter, false), "");
     #endif
     bench_stop();
 
@@ -332,8 +342,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_four_eight_types_entt_view(n, n_iter, true), "(view)");
     bench_report("EnTT",    bench_iter_four_eight_types_entt_group(n, n_iter, true), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_four_eight_types_reflecs(n, n_iter, true), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_four_eight_types_flecs(n, n_iter, true), "");
     #endif
     bench_stop();
 
@@ -342,8 +352,8 @@ void bench_iterate(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_four_eight_types_entt_view(n, n_iter, false), "(view)");
     bench_report("EnTT",    bench_iter_four_eight_types_entt_group(n, n_iter, false), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_four_eight_types_reflecs(n, n_iter, false), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_four_eight_types_flecs(n, n_iter, false), "");
     #endif
     bench_stop();
 }
@@ -381,8 +391,8 @@ void bench_pathological(int n, int n_iter) {
     #ifdef ENTT
     bench_report("EnTT",    bench_iter_one_pathological_entt(n_iter, entity_list), "(view)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_one_pathological_reflecs(n_iter, entity_list), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_one_pathological_flecs(n_iter, entity_list), "");
     #endif
     bench_stop();
 
@@ -391,8 +401,8 @@ void bench_pathological(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_two_pathological_entt_view(n_iter, entity_list), "(view)");
     bench_report("EnTT",    bench_iter_two_pathological_entt_group(n_iter, entity_list), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_two_pathological_reflecs(n_iter, entity_list), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_two_pathological_flecs(n_iter, entity_list), "");
     #endif
     bench_stop();
 
@@ -401,8 +411,8 @@ void bench_pathological(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_three_pathological_entt_view(n_iter, entity_list), "(view)");
     bench_report("EnTT",    bench_iter_three_pathological_entt_group(n_iter, entity_list), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_three_pathological_reflecs(n_iter, entity_list), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_three_pathological_flecs(n_iter, entity_list), "");
     #endif
     bench_stop();
 
@@ -411,8 +421,8 @@ void bench_pathological(int n, int n_iter) {
     bench_report("EnTT",    bench_iter_four_pathological_entt_view(n_iter, entity_list), "(view)");
     bench_report("EnTT",    bench_iter_four_pathological_entt_group(n_iter, entity_list), "(group, owning)");
     #endif
-    #ifdef REFLECS
-    bench_report("Reflecs", bench_iter_four_pathological_reflecs(n_iter, entity_list), "");
+    #ifdef FLECS
+    bench_report("  Flecs", bench_iter_four_pathological_flecs(n_iter, entity_list), "");
     #endif
     bench_stop();
 }
