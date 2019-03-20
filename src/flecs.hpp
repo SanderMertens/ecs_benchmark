@@ -409,7 +409,7 @@ double bench_remove_three_flecs_family(int n) {
 /* -- ITERATION -- */
 
 void IterSmall(EcsRows *rows) {
-    int count = rows->limit;
+    int count = rows->count;
     Mass *m = ecs_column(rows, Mass, 1);
 
     for (int i = 0; i < count; i ++) {
@@ -418,7 +418,7 @@ void IterSmall(EcsRows *rows) {
 }
 
 void IterOne(EcsRows *rows) {
-    int count = rows->limit;
+    int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
 
     for (int i = 0; i < count; i ++) {
@@ -428,7 +428,7 @@ void IterOne(EcsRows *rows) {
 }
 
 void IterTwo(EcsRows *rows) {
-    int count = rows->limit;
+    int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
     Velocity *v = ecs_column(rows, Velocity, 2);
 
@@ -439,7 +439,7 @@ void IterTwo(EcsRows *rows) {
 }
 
 void IterThree(EcsRows *rows) {
-    int count = rows->limit;
+    int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
     Velocity *v = ecs_column(rows, Velocity, 2);
     Mass *m = ecs_column(rows, Mass, 3);
@@ -451,7 +451,7 @@ void IterThree(EcsRows *rows) {
 }
 
 void IterFour(EcsRows *rows) {
-    int count = rows->limit;
+    int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
     Velocity *v = ecs_column(rows, Velocity, 2);
     Mass *m = ecs_column(rows, Mass, 3);
