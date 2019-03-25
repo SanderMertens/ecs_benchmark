@@ -97,7 +97,7 @@ double bench_delete_1component_flecs(int n) {
 
     ECS_COMPONENT(world, Position);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, Position, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -118,7 +118,7 @@ double bench_add_one_flecs(int n) {
 
     ECS_COMPONENT(world, Position);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -159,7 +159,7 @@ double bench_add_two_flecs(int n) {
     ecs_dim(world, n);
     ecs_dim_type(world, Type, n);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -181,7 +181,7 @@ double bench_add_two_flecs_family(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -204,7 +204,7 @@ double bench_add_three_flecs(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_COMPONENT(world, Mass);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -230,7 +230,7 @@ double bench_add_three_flecs_family(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_TYPE(world, Type, Position, Velocity, Mass);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -254,7 +254,7 @@ double bench_add_four_flecs(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_COMPONENT(world, Color);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -280,7 +280,7 @@ double bench_add_four_flecs_family(int n) {
     ECS_COMPONENT(world, Color);
     ECS_TYPE(world, Type, Position, Velocity, Mass, Color);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, 0, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -302,7 +302,7 @@ double bench_remove_one_flecs(int n) {
 
     ECS_COMPONENT(world, Position);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, Position, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -323,7 +323,7 @@ double bench_remove_two_flecs(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, Type, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -345,7 +345,7 @@ double bench_remove_two_flecs_family(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, Type, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -367,7 +367,7 @@ double bench_remove_three_flecs(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_TYPE(world, Type, Position, Velocity, Mass);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, Type, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -391,7 +391,7 @@ double bench_remove_three_flecs_family(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_TYPE(world, Type, Position, Velocity, Mass);
 
-    EcsEntity *entities = new EcsEntity[n];
+    ecs_entity_t *entities = new ecs_entity_t[n];
     ecs_new_w_count(world, Type, n, entities);
 
     struct timespec start; timespec_gettime(&start);
@@ -559,7 +559,7 @@ void create_eight_types(ecs_world_t *world, int count, bool match_all) {
     ECS_COMPONENT(world, Damage);
 
     for(uint64_t i = 0; i < count; i++) {
-        EcsEntity e = ecs_new(world, 0);
+        ecs_entity_t e = ecs_new(world, 0);
         ecs_add(world, e, Position);
         ecs_add(world, e, Mass);
         ecs_add(world, e, Damage);
@@ -683,7 +683,7 @@ void create_pathological(ecs_world_t *world, std::vector< std::vector <int>> ent
     ECS_COMPONENT(world, Intelligence);
 
     for (std::vector<int> &component_list: entity_list) {
-        EcsEntity e = ecs_new(world, 0);
+        ecs_entity_t e = ecs_new(world, 0);
         ecs_add(world, e, Position);
         ecs_add(world, e, Velocity);
         ecs_add(world, e, Mass);
