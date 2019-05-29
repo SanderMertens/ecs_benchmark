@@ -17,9 +17,12 @@
 #ifndef ECS_BENCHMARK_BAKE_CONFIG_H
 #define ECS_BENCHMARK_BAKE_CONFIG_H
 
+/* Generated includes are specific to the bake environment. If a project is not
+ * built with bake, it will have to provide alternative methods for including
+ * its dependencies. */
 /* Headers of public dependencies */
-#include <flecs>
-#include <bake.util>
+#include <flecs.h>
+#include <bake_util.h>
 
 /* Headers of private dependencies */
 #ifdef ECS_BENCHMARK_IMPL
@@ -27,14 +30,18 @@
 #endif
 
 /* Convenience macro for exporting symbols */
-#if ECS_BENCHMARK_IMPL && defined _MSC_VER
-#define ECS_BENCHMARK_EXPORT __declspec(dllexport)
-#elif ECS_BENCHMARK_IMPL
-#define ECS_BENCHMARK_EXPORT __attribute__((__visibility__("default")))
-#elif defined _MSC_VER
-#define ECS_BENCHMARK_EXPORT __declspec(dllimport)
+#ifndef ECS_BENCHMARK_STATIC
+  #if ECS_BENCHMARK_IMPL && (defined(_MSC_VER) || defined(__MINGW32__))
+    #define ECS_BENCHMARK_EXPORT __declspec(dllexport)
+  #elif ECS_BENCHMARK_IMPL
+    #define ECS_BENCHMARK_EXPORT __attribute__((__visibility__("default")))
+  #elif defined _MSC_VER
+    #define ECS_BENCHMARK_EXPORT __declspec(dllimport)
+  #else
+    #define ECS_BENCHMARK_EXPORT
+  #endif
 #else
-#define ECS_BENCHMARK_EXPORT
+  #define ECS_BENCHMARK_EXPORT
 #endif
 
 #endif

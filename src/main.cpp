@@ -1,4 +1,4 @@
-#include <include/ecs_benchmark.h>
+#include <ecs_benchmark.h>
 
 #define N_ENTITIES (1000000)
 #define N_ITERATIONS_CREATE (25)
@@ -248,15 +248,14 @@ void bench_iterate(int n, int n_iter) {
 
     bench_heading("Iterating over entities with systems\n");
 
-    bench_start("Iterate, small component", n);
+    /*bench_start("Iterate, small component", n);
     #ifdef ENTT
     bench_report("EnTT",    bench_iter_small_entt_view(n, n_iter), "(view)");
     #endif
     #ifdef FLECS
     bench_report("  Flecs", bench_iter_small_flecs(n, n_iter), "");
     #endif
-    bench_stop();
-
+    bench_stop();*/
 
     bench_start("Iterate, one component", n);
     #ifdef ENTT
