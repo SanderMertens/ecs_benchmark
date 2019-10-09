@@ -1,4 +1,6 @@
 #include <ecs_benchmark.h>
+#include <vector>
+#include <random>
 
 #define N_ENTITIES (1000000)
 #define N_ITERATIONS_CREATE (25)
@@ -119,12 +121,12 @@ void bench_create(int n) {
     #ifdef ENTT    
     bench_report_n("EnTT",    bench_create_empty_entt(n), "", N_ITERATIONS_CREATE);
     #endif
-    #ifdef FLECS 
-    bench_report_n("  Flecs", bench_create_empty_flecs(n), "", N_ITERATIONS_CREATE);
-    #endif
     #ifdef ENTT    
     bench_report_n("EnTT",    bench_create_empty_entt_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
+    #ifdef FLECS 
+    bench_report_n("  Flecs", bench_create_empty_flecs(n), "", N_ITERATIONS_CREATE);
+    #endif    
     #ifdef FLECS 
     bench_report_n("  Flecs", bench_create_empty_flecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
     #endif
@@ -133,27 +135,49 @@ void bench_create(int n) {
     bench_start("Entity creation, 1 component", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_create_1component_entt(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_1component_entt_prealloc(n), "(prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_1component_entt_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_1component_entt_batch_prealloc(n), "(batching, prealloc)", N_ITERATIONS_CREATE);
     #endif
     #ifdef FLECS
+    bench_report_n("  Flecs", bench_create_1component_flecs(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_1component_flecs_prealloc(n), "(prealloc)", N_ITERATIONS_CREATE);
     bench_report_n("  Flecs", bench_create_1component_flecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_1component_flecs_batch_prealloc(n), "(batching, prealloc)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
     bench_start("Entity creation, 2 component", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_create_2component_entt(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_2component_entt_group(n), "(group)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_2component_entt_prealloc(n), "(prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_2component_entt_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_2component_entt_batch_prealloc(n), "(batching, prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_2component_entt_group_batch_prealloc(n), "(group, batch, prealloc)", N_ITERATIONS_CREATE);
     #endif
     #ifdef FLECS
-    bench_report_n("  Flecs", bench_create_2component_flecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_2component_flecs(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_2component_flecs_prealloc(n), "(prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_2component_flecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_2component_flecs_batch_prealloc(n), "(batching, prealloc)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
     bench_start("Entity creation, 3 component", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_create_3component_entt(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_3component_entt_group(n), "(group)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_3component_entt_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_3component_entt_prealloc(n), "(prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_3component_entt_batch_prealloc(n), "(batching, prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_create_3component_entt_group_batch_prealloc(n), "(group, batch, prealloc)", N_ITERATIONS_CREATE);
     #endif
     #ifdef FLECS
-    bench_report_n("  Flecs", bench_create_3component_flecs_batch(n), "(batching, family)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_3component_flecs(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_3component_flecs_prealloc(n), "(prealloc)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_3component_flecs_batch(n), "(batching)", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_create_3component_flecs_batch_prealloc(n), "(batching, prealloc)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
 
@@ -180,67 +204,91 @@ void bench_add(int n) {
     #ifdef FLECS
     bench_report_n("  Flecs", bench_add_one_flecs(n), "", N_ITERATIONS_ADD);
     bench_report_n("  Flecs", bench_add_one_flecs_new(n), "(new w/component)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_one_to_existing_flecs(n), "(to existing)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_one_to_existing_bulk_flecs(n), "(to existing, bulk)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Add two components", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_two_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_add_two_w_group_entt(n), "(group)", N_ITERATIONS_ADD);
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_add_two_flecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("  Flecs", bench_add_two_flecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_two_flecs_family(n), "(w/type)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_two_to_existing_bulk_flecs(n), "(to existing, bulk)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Add three components", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_three_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_add_three_w_group_entt(n), "(group)", N_ITERATIONS_ADD);
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_add_three_flecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("  Flecs", bench_add_three_flecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_three_flecs_family(n), "(w/type)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_three_to_existing_bulk_flecs(n), "(to existing, bulk)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Add four components", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_add_four_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_add_four_w_group_entt(n), "(group)", N_ITERATIONS_ADD);
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_add_four_flecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("  Flecs", bench_add_four_flecs_family(n), "(add w/family)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_four_flecs_family(n), "(w/type)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Remove one component", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_remove_one_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_remove_one_from_two_entt(n), "(2 components)", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_remove_one_from_two_w_group_entt(n), "(2 components, group)", N_ITERATIONS_ADD);
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_remove_one_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_one_from_two_flecs(n), "(2 components)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_one_from_two_bulk_flecs(n), "(2 components, bulk)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Remove two components", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_remove_two_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_remove_two_w_group_entt(n), "(group)", N_ITERATIONS_ADD);
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_remove_two_flecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("  Flecs", bench_remove_two_flecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_two_flecs_family(n), "(w/type)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
 
     bench_start("Remove three components", n);
     #ifdef ENTT
     bench_report_n("EnTT",    bench_remove_three_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_remove_three_w_group_entt(n), "(group)", N_ITERATIONS_ADD);
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_remove_three_flecs(n), "", N_ITERATIONS_ADD);
-    bench_report_n("  Flecs", bench_remove_three_flecs_family(n), "(remove w/family)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_three_flecs_family(n), "(w/type)", N_ITERATIONS_ADD);
     #endif
     bench_stop();
+
+    bench_start("Remove four components", n);
+    #ifdef ENTT
+    bench_report_n("EnTT",    bench_remove_four_entt(n), "", N_ITERATIONS_ADD);
+    bench_report_n("EnTT",    bench_remove_four_w_group_entt(n), "(group)", N_ITERATIONS_ADD);
+    #endif
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_remove_four_flecs(n), "", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_remove_four_flecs_family(n), "(w/type)", N_ITERATIONS_ADD);
+    #endif
+    bench_stop();    
 }
 
 /* Iteration tests */
