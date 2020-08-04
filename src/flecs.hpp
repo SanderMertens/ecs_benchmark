@@ -36,7 +36,7 @@ double bench_create_empty_flecs_batch(int n) {
     ecs_world_t *world = ecs_init();
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, 0, n);
+    ecs_bulk_new(world, 0, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -66,7 +66,7 @@ double bench_create_1component_flecs_batch(int n) {
     ECS_COMPONENT(world, Position);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, Position, n);
+    ecs_bulk_new(world, Position, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -80,7 +80,7 @@ double bench_create_1component_flecs_prealloc(int n) {
     ECS_COMPONENT(world, Position);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
+    ecs_dim_type(world, ecs_type(Position), n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -99,10 +99,10 @@ double bench_create_1component_flecs_batch_prealloc(int n) {
     ECS_COMPONENT(world, Position);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
+    ecs_dim_type(world, ecs_type(Position), n);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, Position, n);
+    ecs_bulk_new(world, Position, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -136,7 +136,7 @@ double bench_create_2component_flecs_prealloc(int n) {
     ECS_TYPE(world, Movable, Position, Velocity);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Movable, n);
+    ecs_dim_type(world, ecs_type(Movable), n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -157,7 +157,7 @@ double bench_create_2component_flecs_batch(int n) {
     ECS_TYPE(world, Movable, Position, Velocity);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, Movable, n);
+    ecs_bulk_new(world, Movable, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -173,10 +173,10 @@ double bench_create_2component_flecs_batch_prealloc(int n) {
     ECS_TYPE(world, Movable, Position, Velocity);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Movable, n);
+    ecs_dim_type(world, ecs_type(Movable), n);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, Movable, n);
+    ecs_bulk_new(world, Movable, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -212,7 +212,7 @@ double bench_create_3component_flecs_prealloc(int n) {
     ECS_TYPE(world, Movable, Position, Velocity, Mass);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Movable, n);
+    ecs_dim_type(world, ecs_type(Movable), n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -234,7 +234,7 @@ double bench_create_3component_flecs_batch(int n) {
     ECS_TYPE(world, Movable, Position, Velocity, Mass);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, Movable, n);
+    ecs_bulk_new(world, Movable, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -251,10 +251,10 @@ double bench_create_3component_flecs_batch_prealloc(int n) {
     ECS_TYPE(world, Movable, Position, Velocity, Mass);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Movable, n);
+    ecs_dim_type(world, ecs_type(Movable), n);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_new_w_count(world, Movable, n);
+    ecs_bulk_new(world, Movable, n);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -267,7 +267,7 @@ double bench_delete_1component_flecs(int n) {
 
     ECS_COMPONENT(world, Position);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Position, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Position, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -280,19 +280,164 @@ double bench_delete_1component_flecs(int n) {
     return result;
 }
 
+double bench_delete_1component_bulk_flecs(int n) {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+
+    ecs_bulk_new(world, Position, n);    
+
+    struct timespec start; timespec_gettime(&start);
+
+    ecs_filter_t filter = {
+        .include = ecs_type(Position)
+    };
+    ecs_bulk_delete(world, &filter);
+
+    double result = timespec_measure(&start);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_delete_4component_flecs(int n) {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+    ECS_COMPONENT(world, Rotation);
+    ECS_COMPONENT(world, Mass);
+    ECS_TYPE(world, Type, Position, Velocity, Rotation, Mass);
+
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
+
+    struct timespec start; timespec_gettime(&start);
+    for (int i = 0; i < n; i ++) {
+        ecs_delete(world, e_start + i);
+    }
+    double result = timespec_measure(&start);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_delete_4component_bulk_flecs(int n) {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+    ECS_COMPONENT(world, Rotation);
+    ECS_COMPONENT(world, Mass);
+    ECS_TYPE(world, Type, Position, Velocity, Rotation, Mass);
+
+    ecs_bulk_new(world, Type, n);  
+    
+    struct timespec start; timespec_gettime(&start);
+
+    ecs_filter_t filter = {
+        .include = ecs_type(Position)
+    };
+    ecs_bulk_delete(world, &filter);
+
+    double result = timespec_measure(&start);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_delete_8component_flecs(int n) {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+    ECS_COMPONENT(world, Rotation);
+    ECS_COMPONENT(world, Mass);
+    ECS_COMPONENT(world, Color);
+    ECS_COMPONENT(world, Battery);
+    ECS_COMPONENT(world, Damage);
+    ECS_COMPONENT(world, Health);
+    ECS_TYPE(world, Type, Position, Velocity, Rotation, Mass, Color, Battery, Damage, Health);
+
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);  
+
+    struct timespec start; timespec_gettime(&start);
+    for (int i = 0; i < n; i ++) {
+        ecs_delete(world, e_start + i);
+    }
+    double result = timespec_measure(&start);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+double bench_delete_8component_bulk_flecs(int n) {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+    ECS_COMPONENT(world, Rotation);
+    ECS_COMPONENT(world, Mass);
+    ECS_COMPONENT(world, Color);
+    ECS_COMPONENT(world, Battery);
+    ECS_COMPONENT(world, Damage);
+    ECS_COMPONENT(world, Health);
+    ECS_TYPE(world, Type, Position, Velocity, Rotation, Mass, Color, Battery, Damage, Health);
+
+    ecs_bulk_new(world, Type, n);  
+    
+    struct timespec start; timespec_gettime(&start);
+
+    ecs_filter_t filter = {
+        .include = ecs_type(Position)
+    };
+    ecs_bulk_delete(world, &filter);
+
+    double result = timespec_measure(&start);
+
+    ecs_fini(world);
+
+    return result;
+}
+
+
 double bench_add_one_flecs(int n) {
     ecs_world_t *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
+    ecs_dim_type(world, ecs_type(Position), n);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
         ecs_add(world, e_start + i, Position);
+    }
+    double result = timespec_measure(&start);
+
+    ecs_fini(world);
+    
+    return result;
+}
+
+double bench_add_one_entity_flecs(int n) {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+
+    ecs_dim(world, n);
+    ecs_dim_type(world, ecs_type(Position), n);
+
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
+
+    struct timespec start; timespec_gettime(&start);
+    for (int i = 0; i < n; i ++) {
+        ecs_add_entity(world, e_start + i, ecs_entity(Position));
     }
     double result = timespec_measure(&start);
 
@@ -310,10 +455,10 @@ double bench_add_one_to_existing_flecs(int n) {
     ECS_TYPE(world, MyType, Position, Velocity);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
-    ecs_dim_type(world, MyType, n);
+    ecs_dim_type(world, ecs_type(Position), n);
+    ecs_dim_type(world, ecs_type(MyType), n);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Position, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Position, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -336,13 +481,13 @@ double bench_add_one_to_existing_bulk_flecs(int n) {
 
     ecs_dim(world, n);
 
-    ecs_new_w_count(world, Position, n);
+    ecs_bulk_new(world, Position, n);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_type_filter_t filter = {
+    ecs_filter_t filter = {
         .include = ecs_type(Position)
     };
-    ecs_add_remove_w_filter(world, Velocity, 0, &filter);
+    ecs_bulk_add_remove(world, Velocity, 0, &filter);
 
     double result = timespec_measure(&start);
 
@@ -357,7 +502,7 @@ double bench_add_one_flecs_new(int n) {
     ECS_COMPONENT(world, Position);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
+    ecs_dim_type(world, ecs_type(Position), n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -378,10 +523,10 @@ double bench_add_two_flecs(int n) {
     ECS_TYPE(world, Type, Position, Velocity);
     
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
-    ecs_dim_type(world, Type, n);
+    ecs_dim_type(world, ecs_type(Position), n);
+    ecs_dim_type(world, ecs_type(Type), n);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -403,9 +548,9 @@ double bench_add_two_flecs_family(int n) {
     ECS_TYPE(world, Type, Position, Velocity);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Type, n);
+    ecs_dim_type(world, ecs_type(Type), n);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -428,13 +573,13 @@ double bench_add_two_to_existing_bulk_flecs(int n) {
 
     ecs_dim(world, n);
 
-    ecs_new_w_count(world, Position, n);
+    ecs_bulk_new(world, Position, n);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_type_filter_t filter = {
+    ecs_filter_t filter = {
         .include = ecs_type(Position)
     };
-    ecs_add_remove_w_filter(world, Type, 0, &filter);
+    ecs_bulk_add_remove(world, Type, 0, &filter);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -453,11 +598,11 @@ double bench_add_three_flecs(int n) {
     ECS_TYPE(world, PVM, Position, Velocity, Mass);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Position, n);
-    ecs_dim_type(world, PV, n);
-    ecs_dim_type(world, PVM, n);
+    ecs_dim_type(world, ecs_type(Position), n);
+    ecs_dim_type(world, ecs_type(PV), n);
+    ecs_dim_type(world, ecs_type(PVM), n);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -484,9 +629,9 @@ double bench_add_three_flecs_family(int n) {
     ECS_TYPE(world, PVM, Position, Velocity, Mass);
 
     ecs_dim(world, n);
-    ecs_dim_type(world, Type, n);
+    ecs_dim_type(world, ecs_type(Type), n);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -510,13 +655,13 @@ double bench_add_three_to_existing_bulk_flecs(int n) {
 
     ecs_dim(world, n);
 
-    ecs_new_w_count(world, Position, n);
+    ecs_bulk_new(world, Position, n);
 
     struct timespec start; timespec_gettime(&start);
-    ecs_type_filter_t filter = {
+    ecs_filter_t filter = {
         .include = ecs_type(Position)
     };
-    ecs_add_remove_w_filter(world, Type, 0, &filter);
+    ecs_bulk_add_remove(world, Type, 0, &filter);
     double result = timespec_measure(&start);
 
     ecs_fini(world);
@@ -532,7 +677,7 @@ double bench_add_four_flecs(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_COMPONENT(world, Color);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -557,7 +702,7 @@ double bench_add_four_flecs_family(int n) {
     ECS_COMPONENT(world, Color);
     ECS_TYPE(world, Type, Position, Velocity, Mass, Color);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, 0, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, 0, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -576,7 +721,7 @@ double bench_remove_one_flecs(int n) {
 
     ECS_COMPONENT(world, Position);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Position, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Position, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -596,7 +741,7 @@ double bench_remove_one_from_two_flecs(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -616,14 +761,14 @@ double bench_remove_one_from_two_bulk_flecs(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    ecs_new_w_count(world, Type, n);
+    ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
 
-    ecs_type_filter_t filter = {
+    ecs_filter_t filter = {
         .include = ecs_type(Velocity)
     };
-    ecs_add_remove_w_filter(world, 0, Position, &filter);
+    ecs_bulk_add_remove(world, 0, Position, &filter);
 
     double result = timespec_measure(&start);
 
@@ -639,7 +784,7 @@ double bench_remove_two_flecs(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -660,7 +805,7 @@ double bench_remove_two_flecs_family(int n) {
     ECS_COMPONENT(world, Velocity);
     ECS_TYPE(world, Type, Position, Velocity);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -681,7 +826,7 @@ double bench_remove_three_flecs(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_TYPE(world, Type, Position, Velocity, Mass);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -704,7 +849,7 @@ double bench_remove_three_flecs_family(int n) {
     ECS_COMPONENT(world, Mass);
     ECS_TYPE(world, Type, Position, Velocity, Mass);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -727,7 +872,7 @@ double bench_remove_four_flecs(int n) {
     ECS_COMPONENT(world, Color);
     ECS_TYPE(world, Type, Position, Velocity, Mass, Color);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -752,7 +897,7 @@ double bench_remove_four_flecs_family(int n) {
     ECS_COMPONENT(world, Color);
     ECS_TYPE(world, Type, Position, Velocity, Mass, Color);
 
-    ecs_entity_t e_start = ecs_new_w_count(world, Type, n);
+    ecs_entity_t e_start = ecs_bulk_new(world, Type, n);
 
     struct timespec start; timespec_gettime(&start);
     for (int i = 0; i < n; i ++) {
@@ -767,7 +912,7 @@ double bench_remove_four_flecs_family(int n) {
 
 /* -- ITERATION -- */
 
-void IterSmall(ecs_rows_t *rows) {
+void IterSmall(ecs_iter_t *rows) {
     int count = rows->count;
     Mass *m = ecs_column(rows, Mass, 1);
 
@@ -776,7 +921,7 @@ void IterSmall(ecs_rows_t *rows) {
     }
 }
 
-void IterOne(ecs_rows_t *rows) {
+void IterOne(ecs_iter_t *rows) {
     int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
 
@@ -786,7 +931,7 @@ void IterOne(ecs_rows_t *rows) {
     }
 }
 
-void IterTwo(ecs_rows_t *rows) {
+void IterTwo(ecs_iter_t *rows) {
     int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
     Velocity *v = ecs_column(rows, Velocity, 2);
@@ -797,7 +942,7 @@ void IterTwo(ecs_rows_t *rows) {
     }
 }
 
-void IterThree(ecs_rows_t *rows) {
+void IterThree(ecs_iter_t *rows) {
     int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
     Velocity *v = ecs_column(rows, Velocity, 2);
@@ -809,7 +954,7 @@ void IterThree(ecs_rows_t *rows) {
     }
 }
 
-void IterFour(ecs_rows_t *rows) {
+void IterFour(ecs_iter_t *rows) {
     int count = rows->count;
     Position *p = ecs_column(rows, Position, 1);
     Velocity *v = ecs_column(rows, Velocity, 2);
@@ -828,7 +973,7 @@ double bench_iter_small_flecs(int n, int n_iter) {
     ECS_COMPONENT(world, Mass);
     ECS_SYSTEM(world, IterSmall, EcsOnUpdate, Mass);
 
-    ecs_new_w_count(world, Mass, n);
+    ecs_bulk_new(world, Mass, n);
 
     double result = iterate(world, n_iter);
 
@@ -843,7 +988,7 @@ double bench_iter_one_flecs(int n, int n_iter) {
     ECS_COMPONENT(world, Position);
     ECS_SYSTEM(world, IterOne, EcsOnUpdate, Position);
 
-    ecs_new_w_count(world, Position, n);
+    ecs_bulk_new(world, Position, n);
 
     double result = iterate(world, n_iter);
 
@@ -860,7 +1005,7 @@ double bench_iter_two_flecs(int n, int n_iter) {
     ECS_TYPE(world, Movable, Position, Velocity);
     ECS_SYSTEM(world, IterTwo, EcsOnUpdate, Position, Velocity);
 
-    ecs_new_w_count(world, Movable, n);
+    ecs_bulk_new(world, Movable, n);
 
     double result = iterate(world, n_iter);
 
@@ -880,8 +1025,8 @@ double bench_iter_three_two_types_flecs(int n, int n_iter) {
     ECS_TYPE(world, TypeTwo, Position, Velocity, Mass, Rotation);
     ECS_SYSTEM(world, IterThree, EcsOnUpdate, Position, Velocity, Mass);
 
-    ecs_new_w_count(world, TypeOne, n / 2);
-    ecs_new_w_count(world, TypeTwo, n / 2);
+    ecs_bulk_new(world, TypeOne, n / 2);
+    ecs_bulk_new(world, TypeTwo, n / 2);
 
     double result = iterate(world, n_iter);
 
@@ -899,7 +1044,7 @@ double bench_iter_three_flecs(int n, int n_iter) {
     ECS_TYPE(world, Movable, Position, Velocity, Mass);
     ECS_SYSTEM(world, IterThree, EcsOnUpdate, Position, Velocity, Mass);
 
-    ecs_new_w_count(world, Movable, n);
+    ecs_bulk_new(world, Movable, n);
 
     double result = iterate(world, n_iter);
 
@@ -917,7 +1062,7 @@ void create_eight_types(ecs_world_t *world, int count, bool match_all) {
     ECS_COMPONENT(world, Battery);
     ECS_COMPONENT(world, Damage);
 
-    for(uint64_t i = 0; i < count; i++) {
+    for(int64_t i = 0; i < count; i++) {
         ecs_entity_t e = ecs_new(world, 0);
         ecs_add(world, e, Position);
         ecs_add(world, e, Mass);

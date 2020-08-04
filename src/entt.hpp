@@ -119,7 +119,7 @@ double bench_create_2component_entt(int n) {
     entt::registry<std::uint64_t> ecs;
 
     struct timespec start; timespec_gettime(&start);
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -135,7 +135,7 @@ double bench_create_2component_entt_group(int n) {
     ecs.group<Position, Velocity>();
 
     struct timespec start; timespec_gettime(&start);
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -152,7 +152,7 @@ double bench_create_2component_entt_prealloc(int n) {
     ecs.reserve<Velocity>(n);
 
     struct timespec start; timespec_gettime(&start);
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -169,7 +169,7 @@ double bench_create_2component_entt_batch(int n) {
     struct timespec start; timespec_gettime(&start);
     ecs.create(entities.begin(), entities.end());
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         ecs.assign<Position>(entities[i]);
         ecs.assign<Velocity>(entities[i]);
     }
@@ -188,7 +188,7 @@ double bench_create_2component_entt_batch_prealloc(int n) {
     struct timespec start; timespec_gettime(&start);
     ecs.create(entities.begin(), entities.end());
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         ecs.assign<Position>(entities[i]);
         ecs.assign<Velocity>(entities[i]);
     }
@@ -209,7 +209,7 @@ double bench_create_2component_entt_group_batch_prealloc(int n) {
     struct timespec start; timespec_gettime(&start);
     ecs.create(entities.begin(), entities.end());
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         ecs.assign<Position>(entities[i]);
         ecs.assign<Velocity>(entities[i]);
     }
@@ -222,7 +222,7 @@ double bench_create_3component_entt(int n) {
     entt::registry<std::uint64_t> ecs;
 
     struct timespec start; timespec_gettime(&start);
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -239,7 +239,7 @@ double bench_create_3component_entt_group(int n) {
     ecs.group<Position, Velocity, Mass>();
 
     struct timespec start; timespec_gettime(&start);
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -258,7 +258,7 @@ double bench_create_3component_entt_prealloc(int n) {
     ecs.reserve<Mass>(n);    
 
     struct timespec start; timespec_gettime(&start);
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -276,7 +276,7 @@ double bench_create_3component_entt_batch(int n) {
     struct timespec start; timespec_gettime(&start);
     ecs.create(entities.begin(), entities.end());
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         ecs.assign<Position>(entities[i]);
         ecs.assign<Velocity>(entities[i]);
         ecs.assign<Mass>(entities[i]);
@@ -297,7 +297,7 @@ double bench_create_3component_entt_batch_prealloc(int n) {
     struct timespec start; timespec_gettime(&start);
     ecs.create(entities.begin(), entities.end());
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         ecs.assign<Position>(entities[i]);
         ecs.assign<Velocity>(entities[i]);
         ecs.assign<Mass>(entities[i]);
@@ -320,7 +320,7 @@ double bench_create_3component_entt_group_batch_prealloc(int n) {
     struct timespec start; timespec_gettime(&start);
     ecs.create(entities.begin(), entities.end());
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         ecs.assign<Position>(entities[i]);
         ecs.assign<Velocity>(entities[i]);
         ecs.assign<Mass>(entities[i]);
@@ -333,9 +333,103 @@ double bench_create_3component_entt_group_batch_prealloc(int n) {
 double bench_delete_1component_entt(int n) {
     entt::registry<std::uint64_t> ecs;
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
+    }
+
+    struct timespec start; timespec_gettime(&start);
+    ecs.each([&ecs](auto entity) {
+        ecs.destroy(entity);
+    });
+    double result = timespec_measure(&start);
+
+    return result;
+}
+
+double bench_delete_4component_entt(int n) {
+    entt::registry<std::uint64_t> ecs;
+
+    for(std::int64_t i = 0; i < n; i++) {
+        const auto entity = ecs.create();
+        ecs.assign<Position>(entity);
+        ecs.assign<Velocity>(entity);
+        ecs.assign<Rotation>(entity);
+        ecs.assign<Mass>(entity);
+    }
+
+    struct timespec start; timespec_gettime(&start);
+    ecs.each([&ecs](auto entity) {
+        ecs.destroy(entity);
+    });
+    double result = timespec_measure(&start);
+
+    return result;
+}
+
+double bench_delete_4component_group_entt(int n) {
+    entt::registry<std::uint64_t> ecs;
+
+    ecs.group<Position, Velocity, Rotation, Mass>();
+
+    for(std::int64_t i = 0; i < n; i++) {
+        const auto entity = ecs.create();
+        ecs.assign<Position>(entity);
+        ecs.assign<Velocity>(entity);
+        ecs.assign<Rotation>(entity);
+        ecs.assign<Mass>(entity);
+    }
+
+    struct timespec start; timespec_gettime(&start);
+    ecs.each([&ecs](auto entity) {
+        ecs.destroy(entity);
+    });
+    double result = timespec_measure(&start);
+
+    return result;
+}
+
+double bench_delete_8component_entt(int n) {
+    entt::registry<std::uint64_t> ecs;
+
+    for(std::int64_t i = 0; i < n; i++) {
+        const auto entity = ecs.create();
+        ecs.assign<Position>(entity);
+        ecs.assign<Velocity>(entity);
+        ecs.assign<Rotation>(entity);
+        ecs.assign<Mass>(entity);
+        ecs.assign<Color>(entity);
+        ecs.assign<Battery>(entity);
+        ecs.assign<Damage>(entity);
+        ecs.assign<Health>(entity);
+    }
+
+    struct timespec start; timespec_gettime(&start);
+    ecs.each([&ecs](auto entity) {
+        ecs.destroy(entity);
+    });
+    double result = timespec_measure(&start);
+
+    return result;
+}
+
+double bench_delete_8component_group_entt(int n) {
+    entt::registry<std::uint64_t> ecs;
+
+    /* A group with 8 fully owned components would be a bit ridiculous, so use
+     * partial owned instead */
+    ecs.group<Position, Velocity, Rotation, Mass>(entt::get<Color, Battery, Damage, Health>);
+
+    for(std::int64_t i = 0; i < n; i++) {
+        const auto entity = ecs.create();
+        ecs.assign<Position>(entity);
+        ecs.assign<Velocity>(entity);
+        ecs.assign<Rotation>(entity);
+        ecs.assign<Mass>(entity);
+        ecs.assign<Color>(entity);
+        ecs.assign<Battery>(entity);
+        ecs.assign<Damage>(entity);
+        ecs.assign<Health>(entity);        
     }
 
     struct timespec start; timespec_gettime(&start);
@@ -667,7 +761,7 @@ double bench_remove_four_w_group_entt(int n) {
 double bench_iter_one_entt_view(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
     }
@@ -681,7 +775,7 @@ double bench_iter_one_entt_view(int n, int n_iter) {
 double bench_iter_two_entt_view(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -696,7 +790,7 @@ double bench_iter_two_entt_view(int n, int n_iter) {
 double bench_iter_three_two_types_entt_view(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -716,7 +810,7 @@ double bench_iter_two_entt_group(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
     ecs.group<Position, Velocity>();
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -732,7 +826,7 @@ double bench_iter_three_two_types_entt_group(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
     ecs.group<Position, Velocity, Mass>();
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -751,7 +845,7 @@ double bench_iter_three_two_types_entt_group(int n, int n_iter) {
 double bench_iter_three_entt_view(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -768,7 +862,7 @@ double bench_iter_three_entt_group(int n, int n_iter) {
     entt::registry<std::uint64_t> ecs;
     ecs.group<Position, Velocity, Mass>();
 
-    for(std::uint64_t i = 0; i < n; i++) {
+    for(std::int64_t i = 0; i < n; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Velocity>(entity);
@@ -781,8 +875,8 @@ double bench_iter_three_entt_group(int n, int n_iter) {
     });
 }
 
-void create_eight_types(entt::registry<std::uint64_t> &ecs, std::uint64_t count, bool match_all) {
-    for(std::uint64_t i = 0; i < count; i++) {
+void create_eight_types(entt::registry<std::uint64_t> &ecs, std::int64_t count, bool match_all) {
+    for(std::int64_t i = 0; i < count; i++) {
         const auto entity = ecs.create();
         ecs.assign<Position>(entity);
         ecs.assign<Mass>(entity);

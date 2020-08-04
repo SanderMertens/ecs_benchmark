@@ -187,8 +187,31 @@ void bench_create(int n) {
     #endif
     #ifdef FLECS
     bench_report_n("  Flecs", bench_delete_1component_flecs(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_delete_1component_bulk_flecs(n), "(bulk)", N_ITERATIONS_CREATE);
     #endif
     bench_stop();
+
+    bench_start("Entity deletion, 4 components", n);
+    #ifdef ENTT
+    bench_report_n("EnTT",    bench_delete_4component_entt(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_delete_4component_group_entt(n), "(group)", N_ITERATIONS_CREATE);
+    #endif
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_delete_4component_flecs(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_delete_4component_bulk_flecs(n), "(bulk)", N_ITERATIONS_CREATE);
+    #endif
+    bench_stop(); 
+
+    bench_start("Entity deletion, 8 components", n);
+    #ifdef ENTT
+    bench_report_n("EnTT",    bench_delete_8component_entt(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("EnTT",    bench_delete_8component_group_entt(n), "(group, 4 full/4 partial own)", N_ITERATIONS_CREATE);
+    #endif
+    #ifdef FLECS
+    bench_report_n("  Flecs", bench_delete_8component_flecs(n), "", N_ITERATIONS_CREATE);
+    bench_report_n("  Flecs", bench_delete_8component_bulk_flecs(n), "(bulk)", N_ITERATIONS_CREATE);
+    #endif
+    bench_stop();        
 }
 
 /* Add/Remove tests */
@@ -204,6 +227,7 @@ void bench_add(int n) {
     #ifdef FLECS
     bench_report_n("  Flecs", bench_add_one_flecs(n), "", N_ITERATIONS_ADD);
     bench_report_n("  Flecs", bench_add_one_flecs_new(n), "(new w/component)", N_ITERATIONS_ADD);
+    bench_report_n("  Flecs", bench_add_one_entity_flecs(n), "(add_w_entity)", N_ITERATIONS_ADD);
     bench_report_n("  Flecs", bench_add_one_to_existing_flecs(n), "(to existing)", N_ITERATIONS_ADD);
     bench_report_n("  Flecs", bench_add_one_to_existing_bulk_flecs(n), "(to existing, bulk)", N_ITERATIONS_ADD);
     #endif
