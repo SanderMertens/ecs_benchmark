@@ -109,7 +109,7 @@ Entity deletion, 8 components (n = 1000000):
 | Framework | Measurement                        |
 |-----------|------------------------------------|
 |      EnTT |  0.091692                          |
-|      EnTT |  0.142927 (group, 4 full/4 partial own)      |
+|      EnTT |  0.142927 (group, 4 full owned)    |
 |     Flecs |  0.095438                          |
 |     Flecs |  0.015178 (bulk)                   |
 
