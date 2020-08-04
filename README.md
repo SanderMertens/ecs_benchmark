@@ -18,6 +18,7 @@ Each benchmark is isolated in its own function. Any datastructures required for 
 
 
 ## Benchmarks
+The benchmarks are reported in seconds, where the number represents N iterations of the test. If a test takes 0.04 seconds and n = 1000000, each individual operation took (0.04 / 1000000) seconds. For every test, lower numbers are better.
 
 ### Creating entities
 
