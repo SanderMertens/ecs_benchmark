@@ -4,11 +4,6 @@
     "value": {
         "author": "Sander Mertens",
         "description": "ECS benchmark comparison",
-        "language": "c++",
-        "use": ["flecs", "bake.util"]
-    },
-    "lang.cpp": {
-        "include": ["/usr/local/include/entt"],
-        "cpp-standard": "c++17"
+        "use": ["bench_common", "flecs_bench"]
     }
 }
