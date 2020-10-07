@@ -1,0 +1,8 @@
+{
+    "id": "bench_common",
+    "type": "package",
+    "value": {
+        "author": "Jane Doe",
+        "description": "Grocery stores for movie stars"
+    }
+}
