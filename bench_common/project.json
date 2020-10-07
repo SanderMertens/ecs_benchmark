@@ -1,0 +1,16 @@
+{
+    "id": "bench_common",
+    "type": "package",
+    "value": {
+        "author": "Jane Doe",
+        "description": "Grocery stores for movie stars"
+    },
+    "lang.c": {
+        "cflags": ["-masm=intel", "-D_POSIX_C_SOURCE=199309L"]
+    },
+    "dependee": {
+        "lang.c": {
+            "cflags": ["-masm=intel", "-D_POSIX_C_SOURCE=199309L"]
+        }
+    }
+}

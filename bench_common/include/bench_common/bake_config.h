@@ -14,12 +14,26 @@
  * dependencies will automatically show up in this file. Include bake_config.h
  * in your main project file. Do not edit! */
 
-#ifndef ECS_BENCHMARK_BAKE_CONFIG_H
-#define ECS_BENCHMARK_BAKE_CONFIG_H
+#ifndef BENCH_COMMON_BAKE_CONFIG_H
+#define BENCH_COMMON_BAKE_CONFIG_H
 
 /* Headers of public dependencies */
-#include <bench_common.h>
-#include <flecs_bench.h>
+/* No dependencies */
+
+/* Convenience macro for exporting symbols */
+#ifndef bench_common_STATIC
+#if bench_common_EXPORTS && (defined(_MSC_VER) || defined(__MINGW32__))
+  #define BENCH_COMMON_API __declspec(dllexport)
+#elif bench_common_EXPORTS
+  #define BENCH_COMMON_API __attribute__((__visibility__("default")))
+#elif defined _MSC_VER
+  #define BENCH_COMMON_API __declspec(dllimport)
+#else
+  #define BENCH_COMMON_API
+#endif
+#else
+  #define BENCH_COMMON_API
+#endif
 
 #endif
 
