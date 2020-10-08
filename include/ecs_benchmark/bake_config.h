@@ -20,7 +20,6 @@
 /* Headers of public dependencies */
 #include <bench_common.h>
 #include <flecs_bench.h>
-#include <entt_bench.h>
 
 #endif
 

@@ -7,12 +7,15 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <stdint.h>
 
 typedef struct timespec bench_time_t;
 
+BENCH_COMMON_EXPORT
 void bench_time_get(
     bench_time_t* time);
 
+BENCH_COMMON_EXPORT
 double bench_time_measure(
     bench_time_t *time);
 

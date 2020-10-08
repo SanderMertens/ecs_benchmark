@@ -24,7 +24,7 @@ double bench_time_toDouble(
     bench_time_t t) 
 {
     double result;
-    result = t.tv_sec;
+    result = (double)t.tv_sec;
     result += (double)t.tv_nsec / (double)1000000000;
     return result;
 }

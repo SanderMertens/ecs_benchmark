@@ -3083,11 +3083,11 @@ void ecs_table_move(
     ecs_world_t *restrict world,
     ecs_entity_t dst_entity,
     ecs_entity_t src_entity,
-    ecs_table_t *restrict new_table,
-    ecs_data_t *restrict new_data,
+    ecs_table_t *new_table,
+    ecs_data_t *new_data,
     int32_t new_index,
-    ecs_table_t *restrict old_table,
-    ecs_data_t *restrict old_data,
+    ecs_table_t *old_table,
+    ecs_data_t *old_data,
     int32_t old_index)
 {
     ecs_assert(new_table != NULL, ECS_INTERNAL_ERROR, NULL);
@@ -3534,10 +3534,10 @@ void merge_table_data(
 
 ecs_data_t* ecs_table_merge(
     ecs_world_t *restrict world,
-    ecs_table_t *restrict new_table,
-    ecs_table_t *restrict old_table,
-    ecs_data_t *restrict new_data,
-    ecs_data_t *restrict old_data)
+    ecs_table_t *new_table,
+    ecs_table_t *old_table,
+    ecs_data_t *new_data,
+    ecs_data_t *old_data)
 {
     ecs_assert(old_table != NULL, ECS_INTERNAL_ERROR, NULL);
     bool move_data = false;
@@ -6121,7 +6121,7 @@ size_t append_to_str(
     }
     
     if (to_write) {
-        ecs_os_strncpy(ptr, str, to_write);
+        ecs_os_strcpy(ptr, str);
     }
 
     (*required) += len;
@@ -7514,7 +7514,7 @@ void* try_sparse(
     }
 
     ecs_assert(dense == chunk->sparse[offset], ECS_INTERNAL_ERROR, NULL);
-    return try_sparse_any(sparse, index);
+    return DATA(chunk->data, sparse->size, offset);
 }
 
 static
@@ -13173,10 +13173,6 @@ void* ecs_os_api_malloc(ecs_size_t size) {
 
 static
 void* ecs_os_api_calloc(ecs_size_t size) {
-    if (size >= 13107200) {
-        abort();
-    }
-
     ecs_os_api_calloc_count ++;
     ecs_assert(size > 0, ECS_INVALID_PARAMETER, NULL);
     return calloc(1, (size_t)size);

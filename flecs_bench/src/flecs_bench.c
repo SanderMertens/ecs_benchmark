@@ -1,3 +1,4 @@
+#include "flecs_bench.h"
 #include "flecs.h"
 
 ECS_COMPONENT_DECLARE(Comp_A);
@@ -1128,12 +1129,12 @@ void flecs_get_ref_from_n_comp(bench_t b, bench_result_t *b_out, ecs_world_t *wo
     ecs_dim_type(world, type, b.count);
 
     ecs_entity_t *ids = malloc(sizeof(ecs_entity_t) * b.count);
-    ecs_ref_t *refs = malloc(sizeof(ecs_ref_t) * b.count);
+    ecs_ref_t *refs = ecs_os_calloc(sizeof(ecs_ref_t) * b.count);
 
     for (int i = 0; i < b.count; i ++) {
         ids[i] = ecs_new_w_type(world, type);
         ecs_set(world, ids[i], Comp_A, {0});
-        ecs_get_ref(world, &refs[i], ids[i], Comp_A);
+        ecs_get_ref_w_entity(world, &refs[i], ids[i], comp);
     }
 
     int e = 0;
@@ -1147,6 +1148,7 @@ void flecs_get_ref_from_n_comp(bench_t b, bench_result_t *b_out, ecs_world_t *wo
     BENCH_STOP(b, b_out);
 
     ecs_os_free(ids);
+    ecs_os_free(refs);
 
     ecs_fini(world);
 }
