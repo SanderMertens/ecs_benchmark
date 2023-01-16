@@ -1,12 +1,29 @@
-# Flecs benchmark
+# Flecs benchmarks
 Keep the following in mind when interpreting the benchmarks:
 - To prevent operations from being entirely optimized away by the compiler, the benchmarks have been measured against a shared library/DLL. Performance will be better if Flecs is compiled as part of an application.
 - The measurements represent avg/operation, except where this doesn't make sense. For example, the reported time for an `add_remove_16_tags` benchmark should be read as `(add_time + remove_time) / (2 * 16)`.
-- Each benchmark runs for a fixed amount of time, and counts how often the benchmarked operations are ran in that time.
+- Each benchmark runs for a fixed amount of time, and counts how often the benchmarked operations ran in that time.
 - The purpose of these benchmarks is to track performance regressions, and to enable others to write and test performance optimizations for Flecs. They intentionally measure as little as possible, and do not reflect real-life scenarios.
+- The filter/query iterator tests are evaluated against a dataset with 2^N tables, where N is the reported number of tags/components. The tables are created by randomly adding N components to entities.
+
+## Usage
+Use these commands to run the benchmarks:
+```bash
+# Recursively clean benchmark project and flecs dependency
+bake clean -r
+
+# Run benchmarks with optimizations enabled
+bake run --cfg release
+```
+
+Flecs can be found here:
+https://github.com/SanderMertens/flecs
+
+Installation instructions for bake can be found here:
+https://github.com/SanderMertens/bake
 
 ## Hardware
-MacBook Pro M1 2021, 64GB RAM
+Benchmarks were measured on a MacBook Pro M1 from 2021, with 64GB RAM
 
 ## Benchmarks
 ns = nanoseconds, us = microseconds, ms = milliseconds
