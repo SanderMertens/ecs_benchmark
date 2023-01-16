@@ -18,8 +18,7 @@
 #define ECS_BENCHMARK_BAKE_CONFIG_H
 
 /* Headers of public dependencies */
-#include <bench_common.h>
-#include <flecs_bench.h>
+#include <flecs.h>
 
 #endif
 

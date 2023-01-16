@@ -1,9 +1,0 @@
-{
-    "id": "flecs_bench",
-    "type": "package",
-    "value": {
-        "author": "John Doe",
-        "description": "Furniture for movie stars",
-        "use": ["flecs", "bench_common"]
-    }
-}

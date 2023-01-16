@@ -1,175 +1,921 @@
-#include "ecs_benchmark.h"
+#include <ecs_benchmark.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#define PI 3.1415926
+#define MEASURE_INTERVAL (25)
+#define MEASURE_TIME (0.5)
+
+typedef struct bench_t {
+    const char *lbl;
+    ecs_time_t t;
+    double dt;
+    int32_t interval;
+    int32_t intervals;
+    int32_t count;
+} bench_t;
+
+#define THOUSAND (1000.0)
+#define MILLION (1000.0 * 1000.0)
+#define BILLION (1000.0 * MILLION)
+
+#define FRAC_THOUSAND (1.0 / THOUSAND)
+#define FRAC_MILLION (1.0 / MILLION)
+#define FRAC_BILLION (1.0 / BILLION)
+
+#define NUM_LEN(v)\
+    ((v > THOUSAND) ? 4 : ((v > 100) ? 3 : ((v > 10) ? 2 : 1)))
+
+#define SYM(v)\
+    (v < FRAC_MILLION) ? "ns" : ((v < FRAC_THOUSAND) ? "us" : "ms")
+
+#define NUM(v)\
+    ((v < FRAC_MILLION) ? (v * BILLION) : ((v < FRAC_THOUSAND) ? (v * MILLION) : (v * THOUSAND)))
+
+#define COLOR(v)\
+    ((v < FRAC_MILLION) ? ECS_GREEN : (v < FRAC_THOUSAND) ? ECS_YELLOW : ECS_RED)
+
+bool flip_coin() {
+    int r = rand();
+    return r >= ((float)RAND_MAX / 2.0f);
+}
+
+const char* spacing(float v) {
+    if (NUM(v) > 100) {
+        return "";
+    } else if (NUM(v) > 10) {
+        return " ";
+    } else {
+        return "  ";
+    }
+}
+
+void header_print(void) {
+    printf("| Benchmark                           | Measurement |\n");
+    printf("|-------------------------------------|-------------|\n");
+}
+
+void bench_print(const char *label, float v) {
+    printf("| %s %*s | %s%.2f%s%s%s    |\n", 
+        label, (int)(34 - strlen(label)), "", COLOR(v), NUM(v), SYM(v), spacing(v), ECS_NORMAL);
+}
+
+bench_t bench_begin(const char *lbl, int32_t count) {
+    bench_t b = {0};
+    b.lbl = lbl;
+    b.interval = MEASURE_INTERVAL;
+    b.intervals = 0;
+    b.count = count;
+    ecs_time_measure(&b.t);
+    return b;
+}
+
+bool bench_next(bench_t *b) {
+    if (!--b->interval) {
+        ecs_time_t t = b->t;
+        double dt = ecs_time_measure(&t);
+        if (dt > MEASURE_TIME) {
+            b->dt = dt;
+            return false;
+        }
+        b->interval = MEASURE_INTERVAL;
+    }
+    b->intervals ++;
+    return true;
+}
+
+void bench_end(bench_t *b) {
+    bench_print(b->lbl, b->dt / (b->intervals * b->count));
+}
+
+ecs_entity_t* create_ids(ecs_world_t *world, int32_t count, ecs_size_t size, bool low) {
+    ecs_entity_t *ids = ecs_os_calloc_n(ecs_entity_t, count);
+    for (int i = 0; i < count; i ++) {
+        if (low) {
+            ids[i] = ecs_new_low_id(world);
+        } else {
+            ids[i] = ecs_new_id(world);
+        }
+        if (size) {
+            ecs_set(world, ids[i], EcsComponent, {size, 4});
+        }
+    }
+    return ids;
+}
+
+#define ENTITY_COUNT (1000)
+
+void world_mini_fini(void) {
+    ecs_os_set_api_defaults();
+    bench_t b = bench_begin("world_mini_fini", 1);
+    do {
+        ecs_world_t *world = ecs_mini();
+        ecs_fini(world);
+    } while (bench_next(&b));
+    bench_end(&b);
+}
+
+void world_init_fini(void) {
+    ecs_os_set_api_defaults();
+    bench_t b = bench_begin("world_init_fini", 1);
+    do {
+        ecs_world_t *world = ecs_init();
+        ecs_fini(world);
+    } while (bench_next(&b));
+    bench_end(&b);
+}
+
+void has_empty_entity(void) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, 1, 0, true);
+    
+    bench_t b = bench_begin("has_empty_entity", ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_has_id(world, entities[e], ids[0]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void has_id_not_found(void) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, 2, 0, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_id(world, entities[e], ids[0]);
+    }
+
+    bench_t b = bench_begin("has_id_not_found", ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_has_id(world, entities[e], ids[1]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void has_id(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        for (int i = 0; i < id_count; i ++) {
+            ecs_add_id(world, entities[e], ids[i]);
+        }
+    }
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_has_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void get_empty_entity(void) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, 1, 4, true);
+    
+    bench_t b = bench_begin("get_empty_entity", ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_get_id(world, entities[e], ids[0]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void get_id_not_found(void) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, 2, 4, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_id(world, entities[e], ids[0]);
+    }
+    
+    bench_t b = bench_begin("get_id_not_found", ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_get_id(world, entities[e], ids[1]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void get_id(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, 4, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        for (int i = 0; i < id_count; i ++) {
+            ecs_add_id(world, entities[e], ids[i]);
+        }
+    }
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_get_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void get_mut_id(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, 4, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        for (int i = 0; i < id_count; i ++) {
+            ecs_add_id(world, entities[e], ids[i]);
+        }
+    }
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_get_mut_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void set_id(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, 4, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        for (int i = 0; i < id_count; i ++) {
+            ecs_add_id(world, entities[e], ids[i]);
+        }
+    }
+
+    int32_t v = 0;
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_set_id(world, entities[e], ids[i], 4, &v);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+
+void get_pair(const char *label, int32_t target_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *rel = create_ids(world, 1, 4, true);
+    ecs_entity_t *tgt = create_ids(world, target_count, 0, false);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        for (int i = 0; i < target_count; i ++) {
+            ecs_add_pair(world, entities[e], rel[0], tgt[i]);
+        }
+    }
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * target_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < target_count; i ++) {
+                ecs_get_id(world, entities[e], ecs_pair(rel[0], tgt[i]));
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(rel);
+    ecs_os_free(tgt);
+}
+
+void ref_init(void) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, 1, 4, true);
+    
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_id(world, entities[e], ids[0]);
+    }
+
+    bench_t b = bench_begin("ref_init", ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_ref_init_id(world, entities[e], ids[0]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void ref_get(void) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, 1, 4, true);
+    ecs_ref_t *refs = ecs_os_calloc_n(ecs_ref_t, ENTITY_COUNT);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_id(world, entities[e], ids[0]);
+        refs[e] = ecs_ref_init_id(world, entities[e], ids[0]);
+    }
+    
+    bench_t b = bench_begin("ref_get", ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_ref_get_id(world, &refs[e], ids[0]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+    ecs_os_free(refs);
+}
+
+void add_remove(const char* label, int32_t id_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    bench_t b = bench_begin(label, 2 * ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_add_id(world, entities[e], ids[i]);
+            }
+            for (int i = 0; i < id_count; i ++) {
+                ecs_remove_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void add_existing(const char* label, int32_t id_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_id(world, entities[e], ids[0]);
+    }
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_add_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void add_remove_override(const char* label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, 4, true);
+
+    ecs_entity_t base = ecs_new_id(world);
+    for (int i = 0; i < id_count; i ++) {
+        ecs_add_id(world, base, ids[i]);
+    }
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_pair(world, entities[e], EcsIsA, base);
+    }
+
+    bench_t b = bench_begin(label, 2 * ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_add_id(world, entities[e], ids[i]);
+            }
+            for (int i = 0; i < id_count; i ++) {
+                ecs_remove_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void create_delete(const char *label, int32_t id_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    bench_t b = bench_begin(label, ENTITY_COUNT * (2 + id_count));
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_entity_t e = ecs_new_id(world);
+            for (int i = 0; i < id_count; i ++) {
+                ecs_add_id(world, e, ids[i]);
+            }
+            ecs_delete(world, e);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void create_delete_tree(const char *label, int32_t depth) {
+    ecs_world_t *world = ecs_mini();
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_entity_t root = ecs_new_id(world), cur = root;
+        for (int i = 0; i < depth; i ++) {
+            cur = ecs_new_w_pair(world, EcsChildOf, cur);
+        }
+        ecs_delete(world, root);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+static void Dummy(ecs_iter_t *it) { }
+
+void emit(const char *label, int32_t observer_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, 1, 0, true);
+    ecs_entity_t e = ecs_new_w_id(world, ids[0]);
+    ecs_table_t *table = ecs_get_table(world, e);
+    ecs_entity_t evt = ecs_new_id(world);
+
+    for (int i = 0; i < observer_count; i ++) {
+        ecs_observer(world, {
+            .filter.terms = {{ ids[0], .src.flags = EcsSelf }},
+            .callback = Dummy,
+            .events = { evt }
+        });
+    }
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_emit(world, &(ecs_event_desc_t) {
+            .event = evt,
+            .ids = &(ecs_type_t){ .array = ids, .count = 1 },
+            .table = table,
+            .observable = world
+        });
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void modified(const char *label, int32_t observer_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, 1, 4, true);
+    ecs_entity_t e = ecs_new_w_id(world, ids[0]);
+
+    for (int i = 0; i < observer_count; i ++) {
+        ecs_observer(world, {
+            .filter.terms = {{ ids[0], .src.flags = EcsSelf }},
+            .callback = Dummy,
+            .events = { EcsOnSet }
+        });
+    }
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_modified_id(world, e, ids[0]);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void emit_propagate(const char *label, int32_t depth) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, 1, 0, true);
+    ecs_entity_t root = ecs_new_w_id(world, ids[0]), cur = root;
+    ecs_table_t *root_table = ecs_get_table(world, root);
+    ecs_entity_t evt = ecs_new_id(world);
+
+    ecs_observer(world, {
+        .filter.terms = {{ ids[0], .src.flags = EcsUp, .src.trav = EcsChildOf }},
+        .callback = Dummy,
+        .events = { evt }
+    });
+
+    for (int i = 0; i < depth; i ++) {
+        cur = ecs_new_w_pair(world, EcsChildOf, cur);
+    }
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_emit(world, &(ecs_event_desc_t) {
+            .event = evt,
+            .ids = &(ecs_type_t){ .array = ids, .count = 1 },
+            .table = root_table,
+            .observable = world
+        });
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void emit_forward(const char *label, int32_t id_count, int32_t depth) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+    ecs_entity_t root = ecs_new_id(world), cur = root;
+
+    for (int i = 0; i < id_count; i ++) {
+        ecs_observer(world, {
+            .filter.terms = {{ ids[i], .src.flags = EcsUp, .src.trav = EcsChildOf }},
+            .callback = Dummy,
+            .events = { EcsOnAdd, EcsOnRemove }
+        });
+    }
+
+    for (int i = 0; i < id_count; i ++) {
+        ecs_add_id(world, root, ids[i]);
+    }
+    for (int i = 0; i < depth; i ++) {
+        cur = ecs_new_w_pair(world, EcsChildOf, cur);
+    }
+
+    ecs_entity_t e = ecs_new_id(world);
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_add_pair(world, e, EcsChildOf, cur);
+        ecs_remove_pair(world, e, EcsChildOf, cur);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void filter_init_fini(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_filter_desc_t desc = {0};
+        for (int i = 0; i < id_count; i ++) {
+            desc.terms[i].id = ids[i];
+            desc.terms[i].src.flags = EcsSelf;
+        }
+
+        ecs_filter_t *f = ecs_filter_init(world, &desc);
+        ecs_filter_fini(f);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void filter_init_fini_inline(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_filter_desc_t desc = {0};
+        ecs_filter_t f = ECS_FILTER_INIT;
+        desc.storage = &f;
+        for (int i = 0; i < id_count; i ++) {
+            desc.terms[i].id = ids[i];
+            desc.terms[i].src.flags = EcsSelf;
+        }
+
+        ecs_filter_init(world, &desc);
+        ecs_filter_fini(&f);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void filter_iter(const char *label, int32_t id_count, bool component, int32_t query_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    for (int i = 0; i < ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < id_count; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+    }
+
+    ecs_filter_desc_t desc = {0};
+    for (int i = 0; i < query_count; i ++) {
+        desc.terms[i].id = ids[i];
+        desc.terms[i].src.flags = EcsSelf;
+    }
+    ecs_filter_t *f = ecs_filter_init(world, &desc);
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_filter_iter(world, f);
+        while (ecs_filter_next(&it)) { }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_filter_fini(f);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void filter_iter_up(const char *label, int32_t id_count, bool component, bool query_self) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    assert(id_count >= 2);
+
+    ecs_entity_t parent_with = ecs_new_id(world);
+    ecs_add_id(world, parent_with, ids[0]);
+    ecs_entity_t parent_without = ecs_new_id(world);
+    ecs_add_id(world, parent_without, ids[1]);
+
+    for (int i = 0; i < ENTITY_COUNT; i ++) {
+        ecs_entity_t e; 
+        if (flip_coin()) {
+            e = ecs_new_w_pair(world, EcsChildOf, parent_with);
+        } else {
+            e = ecs_new_w_pair(world, EcsChildOf, parent_without);
+        }
+        for (int c = 0; c < id_count; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+    }
+
+    ecs_filter_desc_t desc = {0};
+    desc.terms[0].id = ids[0];
+    desc.terms[0].src.flags = EcsUp;
+    desc.terms[0].src.trav = EcsChildOf;
+    if (query_self) {
+        desc.terms[1].id = ids[0];
+        desc.terms[1].src.flags = EcsSelf;
+    }
+    ecs_filter_t *f = ecs_filter_init(world, &desc);
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_filter_iter(world, f);
+        while (ecs_filter_next(&it)) { }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_filter_fini(f);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void query_init_fini(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_query_desc_t desc = {0};
+        for (int i = 0; i < id_count; i ++) {
+            desc.filter.terms[i].id = ids[i];
+            desc.filter.terms[i].src.flags = EcsSelf;
+        }
+
+        ecs_query_t *q = ecs_query_init(world, &desc);
+        ecs_query_fini(q);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void query_iter(const char *label, int32_t id_count, bool component, int32_t query_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    for (int i = 0; i < ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < id_count; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+    }
+
+    ecs_query_desc_t desc = {0};
+        for (int i = 0; i < id_count; i ++) {
+            desc.filter.terms[i].id = ids[i];
+            desc.filter.terms[i].src.flags = EcsSelf;
+        }
+    ecs_query_t *q = ecs_query_init(world, &desc);
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_query_iter(world, q);
+        while (ecs_query_next(&it)) { }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_query_fini(q);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
 
 int main(int argc, char *argv[]) {
-    // BENCH_HEADER ("Entity creation");
-    // BENCH_RUN    (flecs, new_id, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, new_id_recycle, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, new_w_entity, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, new_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, new_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, new_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, new_16_comp, 1000 * 1000, 10);
-    // BENCH_RUN_EX (flecs, bulk_new, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_new_recycle, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_new_1_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_new_4_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_new_8_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_new_16_comp, 1000 * 1000, 1, 10);
+    header_print();
 
-    // BENCH_HEADER ("Entity deletion");
-    // BENCH_RUN    (flecs, delete, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, delete_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, delete_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, delete_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, delete_16_comp, 1000 * 1000, 10);
-    // BENCH_RUN_EX (flecs, bulk_delete_1_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_delete_4_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_delete_8_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_delete_16_comp, 1000 * 1000, 1, 10);
+    // World init fini
+    world_mini_fini();
+    world_init_fini();
 
-    // BENCH_HEADER ("Initializing components");
-    // BENCH_RUN    (flecs, init_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_16_comp, 1000 * 1000, 10);   
-    // BENCH_RUN_EX (flecs, bulk_init_1_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_init_4_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_init_8_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_init_16_comp, 1000 * 1000, 1, 10);
-    // BENCH_RUN    (flecs, init_1_comp_direct_access, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_4_comp_direct_access, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_8_comp_direct_access, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_16_comp_direct_access, 1000 * 1000, 10);     
-    // BENCH_RUN    (flecs, init_1_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_4_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_8_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, init_16_comp_no_type, 1000 * 1000, 10);    
+    // Has
+    has_empty_entity();
+    has_id_not_found();
+    has_id("has_id", 1);
+    has_id("has_16_ids", 16);
 
-    // BENCH_HEADER ("Adding components");
-    // BENCH_RUN    (flecs, add_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_16_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_1_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_4_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_8_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_16_comp_no_type, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_16_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_1_tag, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_4_tag, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_8_tag, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_to_16_tag, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_again, 1000 * 1000, 10);
-    // BENCH_RUN_EX (flecs, bulk_add_to_1, 1000 * 1000, 1, 10);
-    // BENCH_RUN_EX (flecs, bulk_add_to_16, 1000 * 1000, 1, 10);
+    // Get
+    get_empty_entity();
+    get_id_not_found();
+    get_id("get_id", 1);
+    get_id("get_16_ids", 16);
+    get_pair("get_pair", 1);
+    get_pair("get_pair_16_targets", 16);
 
-    // BENCH_HEADER ("Adding case tags");
-    // BENCH_RUN    (flecs, add_case_to_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_case_to_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_case_to_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_case_to_16_comp, 1000 * 1000, 10);
+    // Get mut
+    get_mut_id("get_mut_id", 1);
+    get_mut_id("get_mut_16_ids", 16);
 
-    // BENCH_HEADER ("Removing components");
-    // BENCH_RUN    (flecs, remove_from_1_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, remove_from_4_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, remove_from_8_comp, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, remove_from_16_comp, 1000 * 1000, 10);
+    // Set mut
+    set_id("set_id", 1);
+    set_id("set_16_ids", 16);
 
-    // BENCH_HEADER ("Setting components");
-    // BENCH_RUN    (flecs, set, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, set_again, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, set_and_new, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, get_mut, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, get_mut_existing, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, get_mut_modified, 1000 * 1000, 10);
+    // Ref
+    ref_init();
+    ref_get();
 
-    // BENCH_HEADER ("Instancing / Hierachies");
-    // BENCH_RUN    (flecs, add_instanceof, 1000 * 1000, 25);
-    // BENCH_RUN    (flecs, add_instanceof_override, 1000 * 1000, 25);
-    // BENCH_RUN    (flecs, override, 1000 * 1000, 25);
-    // BENCH_RUN    (flecs, add_childof, 1000 * 1000, 25);
-    // BENCH_RUN    (flecs, add_instanceof_w_child, 1000, 25);
-    
-    // BENCH_HEADER ("Callbacks");
-    // BENCH_RUN    (flecs, set_w_on_set, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_w_trigger, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_w_monitor, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, add_w_ctor, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, remove_w_dtor, 1000 * 1000, 10);
-    // BENCH_RUN    (flecs, set_w_copy, 1000 * 1000, 10);
+    // Add remove
+    add_remove("add_remove_1_tag", 1, false);
+    add_remove("add_remove_2_tags", 2, false);
+    add_remove("add_remove_16_tags", 16, false);
+    add_remove("add_remove_1_component", 1, true);
+    add_remove("add_remove_2_components", 2, true);
+    add_remove("add_remove_16_components", 16, true);
 
-    BENCH_HEADER ("Getting components");
-    #define COUNT (100)
-    #define SAMPLES (300)
-    // BENCH_RUN    (flecs, get_from_single, COUNT, SAMPLES);
+    // Add existing
+    add_existing("add_existing_1_tag", 1, false);
+    add_existing("add_existing_16_tags", 16, false);
+    add_existing("add_existing_1_component", 1, true);
+    add_existing("add_existing_16_components", 16, true);
 
-    BENCH_RUN    (flecs, get_from_1_comp, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_4_comp, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_8_comp, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_16_comp, COUNT, SAMPLES);
+    // Add override
+    add_remove_override("add_remove_override_1", 1);
+    add_remove_override("add_remove_override_2", 2);
+    add_remove_override("add_remove_override_4", 4);
+    add_remove_override("add_remove_override_16", 16);
 
-    BENCH_RUN    (flecs, get_from_1_comp_not_found, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_4_comp_not_found, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_8_comp_not_found, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_16_comp_not_found, COUNT, SAMPLES);
+    // Create delete
+    create_delete("create_delete_empty", 0, false);
+    create_delete("create_delete_1_tag", 1, false);
+    create_delete("create_delete_2_tags", 2, false);
+    create_delete("create_delete_16_tags", 16, false);
+    create_delete("create_delete_1_component", 1, true);
+    create_delete("create_delete_2_components", 2, true);
+    create_delete("create_delete_16_components", 16, true);
 
-    BENCH_RUN    (flecs, get_from_1_comp_base, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_4_comp_base, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_8_comp_base, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_16_comp_base, COUNT, SAMPLES);
+    // Create delete tree
+    create_delete_tree("create_delete_tree_depth_1", 1);
+    create_delete_tree("create_delete_tree_depth_10", 10);
+    create_delete_tree("create_delete_tree_depth_100", 100);
+    create_delete_tree("create_delete_tree_depth_1000", 1000);
 
-    BENCH_RUN    (flecs, get_from_1_comp_base_4, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_4_comp_base_4, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_8_comp_base_4, COUNT, SAMPLES);
-    BENCH_RUN    (flecs, get_from_16_comp_base_4, COUNT, SAMPLES);
+    // Emit
+    emit("emit_0_observers", 0);
+    emit("emit_1_observer", 1);
+    emit("emit_10_observers", 10);
+    emit("emit_100_observers", 100);
 
-    // BENCH_RUN    (flecs, get_ref_from_single, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, get_ref_from_1_comp, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, get_ref_from_4_comp, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, get_ref_from_8_comp, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, get_ref_from_16_comp, COUNT, SAMPLES);
-    #undef SAMPLES
-    #undef COUNT
+    // Emit propagate
+    emit_propagate("emit_propagate_depth_1", 0);
+    emit_propagate("emit_propagate_depth_10", 10);
+    emit_propagate("emit_propagate_depth_100", 100);
+    emit_propagate("emit_propagate_depth_1000", 1000);
 
-    // BENCH_HEADER ("Has component");
-    // #define COUNT (1000)
-    // #define SAMPLES (300)
-    // BENCH_RUN    (flecs, has_for_1_comp, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, has_for_4_comp, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, has_for_8_comp, COUNT, SAMPLES);
-    // BENCH_RUN    (flecs, has_for_16_comp, COUNT, SAMPLES);
-    // #undef SAMPLES
-    // #undef COUNT
+    // Emit forward
+    emit_forward("emit_forward_1_ids_depth_1", 1, 1);
+    emit_forward("emit_forward_1_ids_depth_1000", 1, 1000);
+    emit_forward("emit_forward_16_ids_depth_1", 16, 1);
+    emit_forward("emit_forward_16_ids_depth_1000", 16, 1000);
 
-    // BENCH_HEADER ("Misc");
-    // BENCH_RUN    (flecs, is_alive_for_alive, 1000 * 1000, 50);
-    // BENCH_RUN    (flecs, is_alive_for_deleted, 1000 * 1000, 50);
-    // BENCH_RUN    (flecs, is_alive_for_nonexist, 1000 * 1000, 50);
-    // BENCH_RUN    (flecs, get_type, 1000 * 1000, 50);
-    // BENCH_RUN    (flecs, init_world, 1, 50);
-    // BENCH_RUN    (flecs, init_mini_world, 1, 50);
+    // Modified
+    modified("modified_0_observers", 0);
+    modified("modified_1_observer", 1);
+    modified("modified_10_observers", 10);
+    modified("modified_100_observers", 100);
 
-    // BENCH_HEADER ("Iterate single type");
-    // BENCH_RUN    (flecs, iter_1m_1comp_1type, 1, 10);
-    // BENCH_RUN    (flecs, iter_1m_2comp_1type, 1, 10);
-    // BENCH_RUN    (flecs, iter_1m_4comp_1type, 1, 10);
+    // Filter init fini
+    filter_init_fini("filter_init_fini_1_ids", 1);
+    filter_init_fini("filter_init_fini_16_ids", 16);
+    filter_init_fini_inline("filter_init_fini_inline_1_ids", 1);
+    filter_init_fini_inline("filter_init_fini_inline_16_ids", 16);
 
-    // BENCH_HEADER ("Iterate multiple type");
-    // BENCH_RUN    (flecs, iter_10k_2comp_1types, 100, 50);
-    // BENCH_RUN    (flecs, iter_10k_2comp_2types, 100, 50);
-    // BENCH_RUN    (flecs, iter_10k_2comp_64types, 100, 50);
-    // BENCH_RUN    (flecs, iter_10k_2comp_256types, 100, 50);
+    // Filter iter
+    filter_iter("filter_iter_8_tags_1_term", 8, false, 1);
+    filter_iter("filter_iter_8_tags_4_terms", 8, false, 4);
+    filter_iter("filter_iter_16_tags_1_term", 16, false, 1);
+    filter_iter("filter_iter_16_tags_4_terms", 16, false, 4);
+    filter_iter("filter_iter_8_components_1_term", 8, true, 1);
+    filter_iter("filter_iter_8_components_4_terms", 8, true, 4);
+    filter_iter("filter_iter_16_components_1_term", 16, true, 1);
+    filter_iter("filter_iter_16_components_4_terms", 16, true, 4);
 
-    // BENCH_HEADER ("World progress");
-    // BENCH_RUN    (flecs, progress_0_sys_user_dt, 1000 * 1000, 20);
-    // BENCH_RUN    (flecs, progress_0_sys_auto_dt, 1000 * 1000, 20);
-    // BENCH_RUN    (flecs, progress_1_sys_user_dt, 1000 * 1000, 20);
-    // BENCH_RUN    (flecs, progress_4_sys_user_dt, 1000 * 1000, 20);
-    // BENCH_RUN    (flecs, progress_8_sys_user_dt, 1000 * 1000, 20);
-    // BENCH_RUN    (flecs, progress_16_sys_user_dt, 1000 * 1000, 20);
+    // Filter iter up
+    filter_iter_up("filter_iter_up_8_tags", 8, false, false);
+    filter_iter_up("filter_iter_up_8_tags_w_self", 8, false, true);
+
+    // Query init fini
+    query_init_fini("query_init_fini_1_ids", 1);
+    query_init_fini("query_init_fini_16_ids", 16);
+
+    // Query iter
+    query_iter("query_iter_8_tags_1_term", 8, false, 1);
+    query_iter("query_iter_8_tags_4_terms", 8, false, 4);
+    query_iter("query_iter_16_tags_1_term", 16, false, 1);
+    query_iter("query_iter_16_tags_4_terms", 16, false, 4);
+    query_iter("query_iter_8_components_1_term", 8, true, 1);
+    query_iter("query_iter_8_components_4_terms", 8, true, 4);
+    query_iter("query_iter_16_components_1_term", 16, true, 1);
+    query_iter("query_iter_16_components_4_terms", 16, true, 4);
+
+    return 0;
 }

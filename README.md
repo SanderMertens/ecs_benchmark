@@ -1,140 +1,98 @@
-# ECS benchmark
+# Flecs benchmark
+Keep the following in mind when interpreting the benchmarks:
+- To prevent operations from being entirely optimized away by the compiler, the benchmarks have been measured against a shared library/DLL. Performance will be better if Flecs is compiled as part of an application.
+- The measurements represent avg/operation, except where this doesn't make sense. For example, the reported time for an `add_remove_16_tags` benchmark should be read as `(add_time + remove_time) / (2 * 16)`.
+- Each benchmark runs for a fixed amount of time, and counts how often the benchmarked operations are ran in that time.
+- The purpose of these benchmarks is to track performance regressions, and to enable others to write and test performance optimizations for Flecs. They intentionally measure as little as possible, and do not reflect real-life scenarios.
 
-Measurements are per operation. Measurements for bulk operations are scaled to the number of entities. To minimize the impact of scheduling and improve reproducibility, each measurement is done N times, for which the minimum and average time are calculated. The minimum time is the most reproducible, as this is the time with the least impact from the OS scheduler. As the times for most operations are measured in nanoseconds, each measurement measures an operation executed many times (typically 1 million). This minimizes the impact of clock accuracy issues and the overhead of measuring time.
+## Hardware
+MacBook Pro M1 2021, 64GB RAM
 
+## Benchmarks
 ns = nanoseconds, us = microseconds, ms = milliseconds
 
-Entity creation                 | Min           | Avg
---------------------------------|---------------|--------------
-flecs.new_id                    | 9.459 ns      | 11.009 ns
-flecs.new_id_recycle            | 2.763 ns      | 3.198 ns
-flecs.new_w_entity              | 36.322 ns     | 42.051 ns
-flecs.new_1_comp                | 34.001 ns     | 36.739 ns
-flecs.new_4_comp                | 41.496 ns     | 48.194 ns
-flecs.new_8_comp                | 64.741 ns     | 70.632 ns
-flecs.new_16_comp               | 114.135 ns    | 122.362 ns
-flecs.bulk_new                  | 6.777 ns      | 7.338 ns
-flecs.bulk_new_recycle          | 0.003 ns      | 0.005 ns
-flecs.bulk_new_1_comp           | 15.836 ns     | 16.972 ns
-flecs.bulk_new_4_comp           | 15.318 ns     | 16.919 ns
-flecs.bulk_new_8_comp           | 15.745 ns     | 16.978 ns
-flecs.bulk_new_16_comp          | 15.595 ns     | 16.847 ns
-
-Entity deletion                 | Min           | Avg
---------------------------------|---------------|--------------
-flecs.delete                    | 22.139 ns     | 23.226 ns
-flecs.delete_1_comp             | 44.861 ns     | 48.074 ns
-flecs.delete_4_comp             | 58.910 ns     | 63.493 ns
-flecs.delete_8_comp             | 92.826 ns     | 97.549 ns
-flecs.delete_16_comp            | 159.953 ns    | 170.816 ns
-flecs.bulk_delete_1_comp        | 16.858 ns     | 18.274 ns
-flecs.bulk_delete_4_comp        | 16.490 ns     | 18.581 ns
-flecs.bulk_delete_8_comp        | 17.627 ns     | 19.177 ns
-flecs.bulk_delete_16_comp       | 18.384 ns     | 19.884 ns
-
-Adding components               | Min           | Avg
---------------------------------|---------------|--------------
-flecs.add_1_comp                | 17.583 ns     | 18.622 ns
-flecs.add_4_comp                | 19.521 ns     | 21.870 ns
-flecs.add_8_comp                | 24.825 ns     | 27.741 ns
-flecs.add_16_comp               | 37.646 ns     | 40.664 ns
-flecs.add_to_1_comp             | 54.413 ns     | 57.786 ns
-flecs.add_to_4_comp             | 96.484 ns     | 100.129 ns
-flecs.add_to_8_comp             | 153.267 ns    | 160.690 ns
-flecs.add_to_16_comp            | 298.991 ns    | 321.761 ns
-flecs.add_to_1_tag              | 40.855 ns     | 44.008 ns
-flecs.add_to_4_tag              | 40.639 ns     | 44.658 ns
-flecs.add_to_8_tag              | 40.176 ns     | 43.748 ns
-flecs.add_to_16_tag             | 40.493 ns     | 44.813 ns
-flecs.add_again                 | 17.990 ns     | 19.225 ns
-flecs.bulk_add_to_1             | 1.522 ns      | 1.765 ns
-flecs.bulk_add_to_16            | 1.555 ns      | 1.786 ns
-
-Adding case tags                | Min           | Avg
---------------------------------|---------------|--------------
-flecs.add_case_to_1_comp        | 39.344 ns     | 41.193 ns
-flecs.add_case_to_4_comp        | 40.941 ns     | 42.647 ns
-flecs.add_case_to_8_comp        | 39.684 ns     | 42.422 ns
-flecs.add_case_to_16_comp       | 41.093 ns     | 42.504 ns
-
-Removing components             | Min           | Avg
---------------------------------|---------------|--------------
-flecs.remove_from_1_comp        | 60.830 ns     | 67.320 ns
-flecs.remove_from_4_comp        | 103.126 ns    | 109.715 ns
-flecs.remove_from_8_comp        | 149.756 ns    | 160.705 ns
-flecs.remove_from_16_comp       | 335.079 ns    | 362.004 ns
-
-Setting components              | Min           | Avg
---------------------------------|---------------|--------------
-flecs.set                       | 44.842 ns     | 47.119 ns
-flecs.set_again                 | 25.977 ns     | 28.495 ns
-flecs.set_and_new               | 55.328 ns     | 57.331 ns
-flecs.get_mut                   | 18.982 ns     | 19.814 ns
-flecs.get_mut_modified          | 27.560 ns     | 30.070 ns
-
-Instancing / Hierachies         | Min           | Avg
---------------------------------|---------------|--------------
-flecs.add_instanceof            | 80.083 ns     | 85.735 ns
-flecs.add_instanceof_override   | 125.025 ns    | 131.559 ns
-flecs.override                  | 89.654 ns     | 94.204 ns
-flecs.add_childof               | 78.651 ns     | 87.123 ns
-
-Callbacks                       | Min           | Avg
---------------------------------|---------------|--------------
-flecs.set_w_on_set              | 41.370 ns     | 44.009 ns
-flecs.add_w_trigger             | 214.818 ns    | 219.544 ns
-flecs.add_w_monitor             | 55.932 ns     | 59.054 ns
-flecs.add_w_ctor                | 52.505 ns     | 54.721 ns
-flecs.remove_w_dtor             | 44.884 ns     | 47.918 ns
-flecs.set_w_copy                | 26.518 ns     | 28.107 ns
-
-Getting components              | Min           | Avg
---------------------------------|---------------|--------------
-flecs.get_from_single           | 7.460 ns      | 8.328 ns
-flecs.get_from_1_comp           | 7.273 ns      | 7.636 ns
-flecs.get_from_4_comp           | 8.306 ns      | 8.820 ns
-flecs.get_from_8_comp           | 8.865 ns      | 9.410 ns
-flecs.get_from_16_comp          | 9.070 ns      | 9.637 ns
-flecs.get_ref_from_single       | 2.580 ns      | 2.778 ns
-flecs.get_ref_from_1_comp       | 4.563 ns      | 4.913 ns
-flecs.get_ref_from_4_comp       | 4.568 ns      | 4.859 ns
-flecs.get_ref_from_8_comp       | 4.565 ns      | 5.076 ns
-flecs.get_ref_from_16_comp      | 4.491 ns      | 4.929 ns
-
-Has component                   | Min           | Avg
---------------------------------|---------------|--------------
-flecs.has_for_1_comp            | 8.542 ns      | 9.493 ns
-flecs.has_for_4_comp            | 10.491 ns     | 11.152 ns
-flecs.has_for_8_comp            | 11.332 ns     | 12.969 ns
-flecs.has_for_16_comp           | 12.282 ns     | 13.056 ns
-
-Misc                            | Min           | Avg
---------------------------------|---------------|--------------
-flecs.is_alive_for_alive        | 2.396 ns      | 2.986 ns
-flecs.is_alive_for_deleted      | 1.530 ns      | 1.684 ns
-flecs.is_alive_for_nonexist     | 0.658 ns      | 0.817 ns
-flecs.get_type                  | 3.295 ns      | 3.807 ns
-flecs.init_world                | 2.798 ms   | 3.809 ms
-flecs.init_mini_world           | 257.360 us   | 339.374 us
-
-Iterate single type             | Min           | Avg
---------------------------------|---------------|--------------
-flecs.iter_1m_1comp_1type       | 145.977 us   | 188.943 us
-flecs.iter_1m_2comp_1type       | 209.143 us   | 282.193 us
-flecs.iter_1m_4comp_1type       | 407.664 us   | 545.868 us
-
-Iterate multiple type           | Min           | Avg
---------------------------------|---------------|--------------
-flecs.iter_10k_2comp_1types     | 1.287 us   | 1.624 us
-flecs.iter_10k_2comp_2types     | 1.263 us   | 1.708 us
-flecs.iter_10k_2comp_64types    | 2.461 us   | 3.180 us
-flecs.iter_10k_2comp_256types   | 7.785 us   | 10.427 us
-
-World progress                  | Min           | Avg
---------------------------------|---------------|--------------
-flecs.progress_0_sys_user_dt    | 69.374 ns     | 76.137 ns
-flecs.progress_0_sys_auto_dt    | 115.902 ns    | 125.194 ns
-flecs.progress_1_sys_user_dt    | 126.582 ns    | 128.281 ns
-flecs.progress_4_sys_user_dt    | 248.826 ns    | 252.838 ns
-flecs.progress_8_sys_user_dt    | 405.778 ns    | 410.441 ns
-flecs.progress_16_sys_user_dt   | 707.572 ns    | 719.694 ns
+| Benchmark                           | Measurement |
+|-------------------------------------|-------------|
+| world_mini_fini                     | 295.63us    |
+| world_init_fini                     | 1.22ms      |
+| has_empty_entity                    | 1.98ns      |
+| has_id_not_found                    | 3.64ns      |
+| has_id                              | 4.63ns      |
+| has_16_ids                          | 4.91ns      |
+| get_empty_entity                    | 1.98ns      |
+| get_id_not_found                    | 3.96ns      |
+| get_id                              | 4.03ns      |
+| get_16_ids                          | 4.21ns      |
+| get_pair                            | 4.93ns      |
+| get_pair_16_targets                 | 5.17ns      |
+| get_mut_id                          | 7.75ns      |
+| get_mut_16_ids                      | 8.01ns      |
+| set_id                              | 12.19ns     |
+| set_16_ids                          | 12.71ns     |
+| ref_init                            | 4.63ns      |
+| ref_get                             | 2.24ns      |
+| add_remove_1_tag                    | 18.43ns     |
+| add_remove_2_tags                   | 23.96ns     |
+| add_remove_16_tags                  | 29.42ns     |
+| add_remove_1_component              | 19.55ns     |
+| add_remove_2_components             | 28.10ns     |
+| add_remove_16_components            | 84.78ns     |
+| add_existing_1_tag                  | 10.25ns     |
+| add_existing_16_tags                | 10.54ns     |
+| add_existing_1_component            | 10.26ns     |
+| add_existing_16_components          | 10.63ns     |
+| add_remove_override_1               | 72.10ns     |
+| add_remove_override_2               | 76.17ns     |
+| add_remove_override_4               | 86.93ns     |
+| add_remove_override_16              | 135.08ns    |
+| create_delete_empty                 | 5.61ns      |
+| create_delete_1_tag                 | 13.57ns     |
+| create_delete_2_tags                | 17.62ns     |
+| create_delete_16_tags               | 27.08ns     |
+| create_delete_1_component           | 14.41ns     |
+| create_delete_2_components          | 20.12ns     |
+| create_delete_16_components         | 76.35ns     |
+| create_delete_tree_depth_1          | 1.12us      |
+| create_delete_tree_depth_10         | 8.51us      |
+| create_delete_tree_depth_100        | 88.48us     |
+| create_delete_tree_depth_1000       | 908.30us    |
+| emit_0_observers                    | 23.00ns     |
+| emit_1_observer                     | 37.95ns     |
+| emit_10_observers                   | 94.42ns     |
+| emit_100_observers                  | 732.17ns    |
+| emit_propagate_depth_1              | 30.43ns     |
+| emit_propagate_depth_10             | 206.13ns    |
+| emit_propagate_depth_100            | 2.47us      |
+| emit_propagate_depth_1000           | 36.03us     |
+| emit_forward_1_ids_depth_1          | 341.35ns    |
+| emit_forward_1_ids_depth_1000       | 348.01ns    |
+| emit_forward_16_ids_depth_1         | 988.71ns    |
+| emit_forward_16_ids_depth_1000      | 996.86ns    |
+| modified_0_observers                | 10.26ns     |
+| modified_1_observer                 | 50.59ns     |
+| modified_10_observers               | 106.16ns    |
+| modified_100_observers              | 720.47ns    |
+| filter_init_fini_1_ids              | 70.89ns     |
+| filter_init_fini_16_ids             | 489.22ns    |
+| filter_init_fini_inline_1_ids       | 58.93ns     |
+| filter_init_fini_inline_16_ids      | 476.37ns    |
+| filter_iter_8_tags_1_term           | 2.39us      |
+| filter_iter_8_tags_4_terms          | 4.55us      |
+| filter_iter_16_tags_1_term          | 11.18us     |
+| filter_iter_16_tags_4_terms         | 22.31us     |
+| filter_iter_8_components_1_term     | 2.41us      |
+| filter_iter_8_components_4_terms    | 4.61us      |
+| filter_iter_16_components_1_term    | 14.06us     |
+| filter_iter_16_components_4_terms   | 23.51us     |
+| filter_iter_up_8_tags               | 20.64us     |
+| filter_iter_up_8_tags_w_self        | 22.58us     |
+| query_init_fini_1_ids               | 630.21ns    |
+| query_init_fini_16_ids              | 8.55us      |
+| query_iter_8_tags_1_term            | 55.18ns     |
+| query_iter_8_tags_4_terms           | 55.14ns     |
+| query_iter_16_tags_1_term           | 27.73ns     |
+| query_iter_16_tags_4_terms          | 27.75ns     |
+| query_iter_8_components_1_term      | 56.85ns     |
+| query_iter_8_components_4_terms     | 56.75ns     |
+| query_iter_16_components_1_term     | 27.82ns     |
+| query_iter_16_components_4_terms    | 27.72ns     |
