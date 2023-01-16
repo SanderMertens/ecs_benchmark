@@ -464,6 +464,71 @@ void add_remove_override(const char* label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
+void dummy_xtor(void *ptr, int32_t count, const ecs_type_info_t *ti) {
+    (void)ptr;
+    (void)count;
+    (void)ti;
+}
+
+void add_remove_hooks(const char* label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, 4, true);
+
+    for (int i = 0; i < id_count; i ++) {
+        ecs_set_hooks_id(world, ids[i], &(ecs_type_hooks_t){
+            .ctor = dummy_xtor,
+            .dtor = dummy_xtor,
+        });
+    }
+
+    bench_t b = bench_begin(label, 2 * ENTITY_COUNT * id_count);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_add_id(world, entities[e], ids[i]);
+            }
+            for (int i = 0; i < id_count; i ++) {
+                ecs_remove_id(world, entities[e], ids[i]);
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
+void add_remove_cmd(const char* label, int32_t id_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    bench_t b = bench_begin(label, 2 * ENTITY_COUNT * id_count);
+    do {
+        ecs_defer_begin(world);
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_add_id(world, entities[e], ids[i]);
+            }
+        }
+        ecs_defer_end(world);
+        ecs_defer_begin(world);
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            for (int i = 0; i < id_count; i ++) {
+                ecs_remove_id(world, entities[e], ids[i]);
+            }
+        }
+        ecs_defer_end(world);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
+    ecs_os_free(ids);
+}
+
 void create_delete(const char *label, int32_t id_count, bool component) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
@@ -828,9 +893,11 @@ int main(int argc, char *argv[]) {
     add_remove("add_remove_1_tag", 1, false);
     add_remove("add_remove_2_tags", 2, false);
     add_remove("add_remove_16_tags", 16, false);
+    add_remove("add_remove_32_tags", 32, false);
     add_remove("add_remove_1_component", 1, true);
     add_remove("add_remove_2_components", 2, true);
     add_remove("add_remove_16_components", 16, true);
+    add_remove("add_remove_32_components", 32, true);
 
     // Add existing
     add_existing("add_existing_1_tag", 1, false);
@@ -843,6 +910,22 @@ int main(int argc, char *argv[]) {
     add_remove_override("add_remove_override_2", 2);
     add_remove_override("add_remove_override_4", 4);
     add_remove_override("add_remove_override_16", 16);
+
+    // Add cmd
+    add_remove_cmd("add_remove_cmd_1_tag", 1, false);
+    add_remove_cmd("add_remove_cmd_2_tags", 2, false);
+    add_remove_cmd("add_remove_cmd_16_tags", 16, false);
+    add_remove_cmd("add_remove_cmd_32_tags", 32, false);
+    add_remove_cmd("add_remove_cmd_1_components", 1, true);
+    add_remove_cmd("add_remove_cmd_2_components", 2, true);
+    add_remove_cmd("add_remove_cmd_16_components", 16, true);
+    add_remove_cmd("add_remove_cmd_32_components", 32, true);
+
+    // Add remove hooks
+    add_remove_hooks("add_remove_hooks_1", 1);
+    add_remove_hooks("add_remove_hooks_2", 2);
+    add_remove_hooks("add_remove_hooks_16", 16);
+    add_remove_hooks("add_remove_hooks_32", 32);
 
     // Create delete
     create_delete("create_delete_empty", 0, false);
