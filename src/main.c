@@ -163,6 +163,46 @@ void world_progress(char *label, int system_count) {
     ecs_fini(world);
 }
 
+void create_delete_table(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count - 1, 0, true);
+
+    ecs_table_t *table = NULL;
+    for (int i = 0; i < id_count - 1; i ++) {
+        table = ecs_table_add_id(world, table, ids[i]);
+    }
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_entity_t id = ecs_new_low_id(world);
+        ecs_table_add_id(world, table, id);
+        ecs_delete(world, id);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void table_add_remove(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    bench_t b = bench_begin(label, id_count * 2);
+    do {
+        ecs_table_t *table = NULL;
+        for (int i = 0; i < id_count; i ++) {
+            table = ecs_table_add_id(world, table, ids[i]);
+        }
+
+        for (int i = id_count - 1; i >= 0; i --) {
+            table = ecs_table_remove_id(world, table, ids[i]);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
 void has_empty_entity(void) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
@@ -700,6 +740,85 @@ void create_delete_tree(const char *label, int32_t depth) {
     ecs_fini(world);
 }
 
+void change_parent() {
+    ecs_world_t *world = ecs_mini();
+
+    ecs_entity_t p1 = ecs_new_id(world);
+    ecs_entity_t p2 = ecs_new_id(world);
+    ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, p2);
+
+    bench_t b = bench_begin("change_parent", 2);
+    do {
+        ecs_add_pair(world, e, EcsChildOf, p1);
+        ecs_add_pair(world, e, EcsChildOf, p2);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void change_parent_root() {
+    ecs_world_t *world = ecs_mini();
+
+    ecs_entity_t p = ecs_new_id(world);
+    ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, p);
+
+    bench_t b = bench_begin("change_parent_root", 2);
+    do {
+        ecs_remove_pair(world, e, EcsChildOf, p);
+        ecs_add_pair(world, e, EcsChildOf, p);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void change_parent_w_name() {
+    ecs_world_t *world = ecs_mini();
+
+    ecs_entity_t p1 = ecs_new_entity(world, "parent_1");
+    ecs_entity_t p2 = ecs_new_entity(world, "parent_2");
+    ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, p2);
+    ecs_set_name(world, e, "child");
+
+    bench_t b = bench_begin("change_parent_w_name", 2);
+    do {
+        ecs_add_pair(world, e, EcsChildOf, p1);
+        ecs_add_pair(world, e, EcsChildOf, p2);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void lookup(const char *label, int32_t depth) {
+    ecs_world_t *world = ecs_mini();
+
+    char *lookup_str = ecs_os_strdup("foo");
+    for (int i = 0; i < depth; i ++) {
+        char *tmp = ecs_asprintf("%s.foo", lookup_str);
+        ecs_os_free(lookup_str);
+        lookup_str = tmp;
+    }
+
+    ecs_entity_t e = ecs_new_entity(world, "foo");
+    for (int i = 0; i < depth; i ++) {
+        ecs_entity_t child = ecs_new_w_pair(world, EcsChildOf, e);
+        ecs_set_name(world, child, "foo");
+        e = child;
+    }
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_lookup_fullpath(world, lookup_str);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_os_free(lookup_str);
+
+    ecs_fini(world);
+}
+
 static void Dummy(ecs_iter_t *it) { }
 
 void emit(const char *label, int32_t observer_count) {
@@ -1044,6 +1163,19 @@ int main(int argc, char *argv[]) {
     world_progress("progress_10_systems", 10);
     world_progress("progress_100_systems", 100);
 
+    // Create delete table
+    create_delete_table("create_delete_table_1_id", 1);
+    create_delete_table("create_delete_table_10_ids", 10);
+    create_delete_table("create_delete_table_100_ids", 100);
+    create_delete_table("create_delete_table_1000_ids", 1000);
+    
+    // Table add remove
+    table_add_remove("table_add_remove_1_id", 1);
+    table_add_remove("table_add_remove_4_ids", 4);
+    table_add_remove("table_add_remove_16_ids", 16);
+    table_add_remove("table_add_remove_32_ids", 32);
+    table_add_remove("table_add_remove_64_ids", 64);
+
     // Has
     has_empty_entity();
     has_id_not_found();
@@ -1145,6 +1277,17 @@ int main(int argc, char *argv[]) {
     create_delete_tree("create_delete_tree_depth_10", 10);
     create_delete_tree("create_delete_tree_depth_100", 100);
     create_delete_tree("create_delete_tree_depth_1000", 1000);
+
+    // Change parent
+    change_parent();
+    change_parent_root();
+    change_parent_w_name();
+
+    // Lookup
+    lookup("lookup_depth_0", 0);
+    lookup("lookup_depth_1", 1);
+    lookup("lookup_depth_10", 10);
+    lookup("lookup_depth_100", 100);
 
     // Emit
     emit("emit_0_observers", 0);
