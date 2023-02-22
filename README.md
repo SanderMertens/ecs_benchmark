@@ -25,7 +25,7 @@ https://github.com/SanderMertens/bake
 ## Environment
 Benchmarks were measured on a MacBook Pro M1 from 2021, with 64GB RAM
 
-Release: https://github.com/SanderMertens/flecs/releases/tag/v3.1.4
+Release: https://github.com/SanderMertens/flecs/releases/tag/v3.1.5
 
 ## Benchmarks
 ns = nanoseconds, us = microseconds, ms = milliseconds
