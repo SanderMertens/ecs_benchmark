@@ -59,19 +59,63 @@ const char* spacing(float v) {
     }
 }
 
+char* bench_vasprintf(
+    const char *fmt,
+    va_list args)
+{
+    ecs_size_t size = 0;
+    char *result  = NULL;
+    va_list tmpa;
+
+    va_copy(tmpa, args);
+
+    size = vsnprintf(result, 0, fmt, tmpa);
+
+    va_end(tmpa);
+
+    if ((int32_t)size < 0) { 
+        return NULL; 
+    }
+
+    result = (char *) ecs_os_malloc(size + 1);
+
+    if (!result) { 
+        return NULL; 
+    }
+
+    ecs_os_vsprintf(result, fmt, args);
+
+    return result;
+}
+
+char* bench_asprintf(
+    const char *fmt,
+    ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char *result = bench_vasprintf(fmt, args);
+    va_end(args);
+    return result;
+}
+
+#ifdef PRETTY_TIME_FMT
 void header_print(void) {
     printf("| Benchmark                           | Measurement  |\n");
     printf("|-------------------------------------|--------------|\n");
 }
 
-#ifdef PRETTY_TIME_FMT
 void bench_print(const char *label, float v) {
     printf("| %s %*s | %s%.2f%s%s%s |\n", 
         label, (int)(34 - strlen(label)), "", COLOR(v), NUM(v), SYM(v), spacing(NUM(v)), ECS_NORMAL);
 }
 #else
+void header_print(void) {
+    printf("Benchmark                            Measurement\n");
+}
+
 void bench_print(const char *label, float v) {
-    printf("| %s %*s | %s%.2f%s%s  |\n", 
+    printf("%s %*s  %s%.2f%s%s\n", 
         label, (int)(34 - strlen(label)), "", COLOR(v), v * BILLION, spacing(v * BILLION), ECS_NORMAL);
 }
 #endif
@@ -106,22 +150,30 @@ void bench_end(bench_t *b) {
 
 /* -- benchmark code -- */
 
-ecs_entity_t* create_ids(ecs_world_t *world, int32_t count, ecs_size_t size, bool low) {
-    ecs_entity_t *ids = ecs_os_calloc_n(ecs_entity_t, count);
-    for (int i = 0; i < count; i ++) {
-        if (low) {
-            ids[i] = ecs_new_low_id(world);
-        } else {
-            ids[i] = ecs_new_id(world);
-        }
-        if (size) {
-            ecs_set(world, ids[i], EcsComponent, {size, 4});
-        }
-    }
-    return ids;
-}
-
+/* Number of entities created for most benchmarks */
 #define ENTITY_COUNT (1000)
+
+/* Number of entities used for query benchmark */
+#define QUERY_ENTITY_COUNT (65536)
+
+ecs_entity_t* create_ids(ecs_world_t *world, int32_t count, ecs_size_t size, bool low) {
+    if (count) {
+        ecs_entity_t *ids = ecs_os_calloc_n(ecs_entity_t, count);
+        for (int i = 0; i < count; i ++) {
+            if (low) {
+                ids[i] = ecs_new_low_id(world);
+            } else {
+                ids[i] = ecs_new_id(world);
+            }
+            if (size) {
+                ecs_set(world, ids[i], EcsComponent, {size, 4});
+            }
+        }
+        return ids;
+    } else {
+        return NULL;
+    }
+}
 
 void world_mini_fini(void) {
     ecs_os_set_api_defaults();
@@ -177,6 +229,90 @@ void create_delete_table(const char *label, int32_t id_count) {
         ecs_entity_t id = ecs_new_low_id(world);
         ecs_table_add_id(world, table, id);
         ecs_delete(world, id);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void match_table_w_query(const char *label, int32_t match_count, int32_t total_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, 2, 0, true);
+
+    ecs_table_t *table = ecs_table_add_id(world, NULL, ids[0]);
+
+    for (int i = 0; i < match_count; i ++) {
+        ecs_query(world, {
+            .filter.terms[0].id = ids[0] /* matches table */
+        });
+    }
+
+    for (int i = 0; i < total_count - match_count; i ++) {
+        ecs_query(world, {
+            .filter.terms[0].id = ids[1] /* doesn't match table */
+        });
+    }
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_entity_t id = ecs_new_low_id(world);
+        ecs_table_add_id(world, table, id);
+        ecs_delete(world, id);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void rematch_tables(const char *label, int32_t rematch_count, int32_t total_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, 2, 0, true);
+
+    ecs_entity_t base_1 = ecs_new_w_id(world, ids[0]);
+    ecs_entity_t base_2 = ecs_new_w_id(world, ids[0]);
+
+    for (int i = 0; i < rematch_count; i ++) {
+        ecs_table_t *table = ecs_table_add_id(world, NULL, ecs_pair(EcsIsA, base_1));
+        ecs_table_add_id(world, table, ecs_new_low_id(world));
+    }
+    for (int i = 0; i < (total_count - rematch_count); i ++) {
+        ecs_table_t *table = ecs_table_add_id(world, NULL, ecs_pair(EcsIsA, base_2));
+        ecs_table_add_id(world, table, ecs_new_low_id(world));
+    }
+
+    ecs_query(world, {
+        .filter.terms[0].id = ids[0] /* matches table */
+    });
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_remove_id(world, base_1, ids[0]);
+        ecs_run_aperiodic(world, 0);
+
+        ecs_add_id(world, base_1, ids[0]);
+        ecs_run_aperiodic(world, 0);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void fill_empty_table_w_query(const char *label, int32_t query_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, 1, 0, true);
+
+    for (int i = 0; i < query_count; i ++) {
+        ecs_query(world, {
+            .filter.terms[0].id = ids[0]
+        });
+    }
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_entity_t e = ecs_new_w_id(world, ids[0]);
+        ecs_run_aperiodic(world, 0);
+        ecs_delete(world, e);
+        ecs_run_aperiodic(world, 0);
     } while (bench_next(&b));
     bench_end(&b);
 
@@ -796,7 +932,7 @@ void lookup(const char *label, int32_t depth) {
 
     char *lookup_str = ecs_os_strdup("foo");
     for (int i = 0; i < depth; i ++) {
-        char *tmp = ecs_asprintf("%s.foo", lookup_str);
+        char *tmp = bench_asprintf("%s.foo", lookup_str);
         ecs_os_free(lookup_str);
         lookup_str = tmp;
     }
@@ -982,7 +1118,7 @@ void filter_iter(const char *label, int32_t id_count, bool component, int32_t qu
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
 
-    for (int i = 0; i < ENTITY_COUNT; i ++) {
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
         ecs_entity_t e = ecs_new_id(world);
         for (int c = 0; c < id_count; c ++) {
             if (flip_coin()) {
@@ -1019,9 +1155,9 @@ void filter_iter_up(const char *label, bool component, bool query_self) {
     ecs_entity_t parent_without = ecs_new_id(world);
     ecs_add_id(world, parent_without, ids[1]);
 
-    for (int i = 0; i < ENTITY_COUNT; i ++) {
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
         ecs_entity_t parent;
-        if (i < (ENTITY_COUNT / 2)) {
+        if (i < (QUERY_ENTITY_COUNT / 2)) {
             parent = ecs_new_w_pair(world, EcsChildOf, parent_with);
         } else {
             parent = ecs_new_w_pair(world, EcsChildOf, parent_without);
@@ -1061,9 +1197,9 @@ void filter_iter_up_w_mut(const char *label, bool component, bool query_self) {
     ecs_entity_t parent_without = ecs_new_id(world);
     ecs_add_id(world, parent_without, ids[1]);
 
-    for (int i = 0; i < ENTITY_COUNT; i ++) {
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
         ecs_entity_t parent;
-        if (i < (ENTITY_COUNT / 2)) {
+        if (i < (QUERY_ENTITY_COUNT / 2)) {
             parent = ecs_new_w_pair(world, EcsChildOf, parent_with);
         } else {
             parent = ecs_new_w_pair(world, EcsChildOf, parent_without);
@@ -1122,7 +1258,7 @@ void query_iter(const char *label, int32_t id_count, bool component, int32_t que
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
 
-    for (int i = 0; i < ENTITY_COUNT; i ++) {
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
         ecs_entity_t e = ecs_new_id(world);
         for (int c = 0; c < id_count; c ++) {
             if (flip_coin()) {
@@ -1156,25 +1292,6 @@ int main(int argc, char *argv[]) {
     // World init fini
     world_mini_fini();
     world_init_fini();
-
-    // Progress
-    world_progress("progress_0_systems", 0);
-    world_progress("progress_1_system", 1);
-    world_progress("progress_10_systems", 10);
-    world_progress("progress_100_systems", 100);
-
-    // Create delete table
-    create_delete_table("create_delete_table_1_id", 1);
-    create_delete_table("create_delete_table_10_ids", 10);
-    create_delete_table("create_delete_table_100_ids", 100);
-    create_delete_table("create_delete_table_1000_ids", 1000);
-    
-    // Table add remove
-    table_add_remove("table_add_remove_1_id", 1);
-    table_add_remove("table_add_remove_4_ids", 4);
-    table_add_remove("table_add_remove_16_ids", 16);
-    table_add_remove("table_add_remove_32_ids", 32);
-    table_add_remove("table_add_remove_64_ids", 64);
 
     // Has
     has_empty_entity();
@@ -1350,6 +1467,53 @@ int main(int argc, char *argv[]) {
     query_iter("query_iter_8_components_4_terms", 8, true, 4);
     query_iter("query_iter_16_components_1_term", 16, true, 1);
     query_iter("query_iter_16_components_4_terms", 16, true, 4);
+
+    // Progress
+    world_progress("progress_0_systems", 0);
+    world_progress("progress_1_system", 1);
+    world_progress("progress_10_systems", 10);
+    world_progress("progress_100_systems", 100);
+
+    // Create delete table
+    create_delete_table("create_delete_table_1_id", 1);
+    create_delete_table("create_delete_table_10_ids", 10);
+    create_delete_table("create_delete_table_100_ids", 100);
+    create_delete_table("create_delete_table_1000_ids", 1000);
+
+    // Match table w query
+    match_table_w_query("match_table_1_of_10_queries", 1, 10);
+    match_table_w_query("match_table_5_of_10_queries", 5, 10);
+    match_table_w_query("match_table_10_of_10_queries", 10, 10);
+
+    match_table_w_query("match_table_1_of_100_queries", 1, 100);
+    match_table_w_query("match_table_10_of_100_queries", 10, 100);
+    match_table_w_query("match_table_50_of_100_queries", 50, 100);
+    match_table_w_query("match_table_100_of_100_queries", 100, 100);
+
+    match_table_w_query("match_table_1_of_1000_queries", 1, 1000);
+    match_table_w_query("match_table_10_of_1000_queries", 10, 1000);
+    match_table_w_query("match_table_100_of_1000_queries", 100, 1000);
+    match_table_w_query("match_table_1000_of_1000_queries", 1000, 1000);
+
+    // Rematch tables
+    rematch_tables("rematch_1_of_1000_tables", 1, 1000);
+    rematch_tables("rematch_10_of_1000_tables", 10, 1000);
+    rematch_tables("rematch_100_of_1000_tables", 100, 1000);
+    rematch_tables("rematch_1000_of_1000_tables", 1000, 1000);
+
+    // Fill empty table w query
+    fill_empty_table_w_query("fill_empty_table_0_queries", 0);
+    fill_empty_table_w_query("fill_empty_table_1_query", 1);
+    fill_empty_table_w_query("fill_empty_table_10_queries", 10);
+    fill_empty_table_w_query("fill_empty_table_100_queries", 100);
+    fill_empty_table_w_query("fill_empty_table_1000_queries", 1000);
+
+    // Table add remove
+    table_add_remove("table_add_remove_1_id", 1);
+    table_add_remove("table_add_remove_4_ids", 4);
+    table_add_remove("table_add_remove_16_ids", 16);
+    table_add_remove("table_add_remove_32_ids", 32);
+    table_add_remove("table_add_remove_64_ids", 64);
 
     return 0;
 }
