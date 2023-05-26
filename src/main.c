@@ -5,7 +5,7 @@
 #define MEASURE_INTERVAL (25)
 #define MEASURE_TIME (0.5)
 
-#define PRETTY_TIME_FMT
+// #define PRETTY_TIME_FMT
 
 typedef struct bench_t {
     const char *lbl;
@@ -860,14 +860,20 @@ void create_delete(const char *label, int32_t id_count, bool component) {
     ecs_os_free(ids);
 }
 
-void create_delete_tree(const char *label, int32_t depth) {
+void create_delete_tree(const char *label, int32_t width, int32_t depth) {
     ecs_world_t *world = ecs_mini();
 
-    bench_t b = bench_begin(label, 1);
+    bench_t b = bench_begin(label, width); /* calculate overhead per child */
     do {
         ecs_entity_t root = ecs_new_id(world), cur = root;
         for (int i = 0; i < depth; i ++) {
-            cur = ecs_new_w_pair(world, EcsChildOf, cur);
+            for (int w = 0; w < width - 1; w ++) {
+                ecs_entity_t e = ecs_new_id(world);
+                ecs_add_pair(world, e, EcsChildOf, cur);
+            }
+            ecs_entity_t e = ecs_new_id(world);
+            ecs_add_pair(world, e, EcsChildOf, cur);
+            cur = e;
         }
         ecs_delete(world, root);
     } while (bench_next(&b));
@@ -1254,6 +1260,44 @@ void query_init_fini(const char *label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
+void query_simple_iter(const char *label, int32_t query_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, query_count, component ? 4 : 0, true);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < query_count; c ++) {
+            ecs_add_id(world, e, ids[c]);
+        }
+    }
+
+    ecs_query_desc_t desc = {0};
+    for (int i = 0; i < query_count; i ++) {
+        desc.filter.terms[i].id = ids[i];
+        desc.filter.terms[i].src.flags = EcsSelf;
+    }
+    ecs_query_t *q = ecs_query_init(world, &desc);
+    ecs_entity_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_query_iter(world, q);
+        while (ecs_query_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_query_fini(q);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
 void query_iter(const char *label, int32_t id_count, bool component, int32_t query_count) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
@@ -1268,18 +1312,26 @@ void query_iter(const char *label, int32_t id_count, bool component, int32_t que
     }
 
     ecs_query_desc_t desc = {0};
-        for (int i = 0; i < id_count; i ++) {
-            desc.filter.terms[i].id = ids[i];
-            desc.filter.terms[i].src.flags = EcsSelf;
-        }
+    for (int i = 0; i < query_count; i ++) {
+        desc.filter.terms[i].id = ids[i];
+        desc.filter.terms[i].src.flags = EcsSelf;
+    }
     ecs_query_t *q = ecs_query_init(world, &desc);
+    ecs_entity_t result = 0;
 
     bench_t b = bench_begin(label, 1);
     do {
         ecs_iter_t it = ecs_query_iter(world, q);
-        while (ecs_query_next(&it)) { }
+        while (ecs_query_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
     } while (bench_next(&b));
     bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1390,10 +1442,25 @@ int main(int argc, char *argv[]) {
     create_delete("create_delete_16_components", 16, true);
 
     // Create delete tree
-    create_delete_tree("create_delete_tree_depth_1", 1);
-    create_delete_tree("create_delete_tree_depth_10", 10);
-    create_delete_tree("create_delete_tree_depth_100", 100);
-    create_delete_tree("create_delete_tree_depth_1000", 1000);
+    create_delete_tree("create_delete_tree_w1_d1", 1, 1);
+    create_delete_tree("create_delete_tree_w1_d10", 1, 10);
+    create_delete_tree("create_delete_tree_w1_d100", 1, 100);
+    create_delete_tree("create_delete_tree_w1_d1000", 1, 1000);
+
+    create_delete_tree("create_delete_tree_w10_d1", 10, 1);
+    create_delete_tree("create_delete_tree_w10_d10", 10, 10);
+    create_delete_tree("create_delete_tree_w10_d100", 10, 100);
+    create_delete_tree("create_delete_tree_w10_d1000", 10, 1000);
+
+    create_delete_tree("create_delete_tree_w100_d1", 100, 1);
+    create_delete_tree("create_delete_tree_w100_d10", 100, 10);
+    create_delete_tree("create_delete_tree_w100_d100", 100, 100);
+    create_delete_tree("create_delete_tree_w100_d1000", 100, 1000);
+
+    create_delete_tree("create_delete_tree_w1000_d1", 1000, 1);
+    create_delete_tree("create_delete_tree_w1000_d10", 1000, 10);
+    create_delete_tree("create_delete_tree_w1000_d100", 1000, 100);
+    create_delete_tree("create_delete_tree_w1000_d1000", 1000, 1000);
 
     // Change parent
     change_parent();
