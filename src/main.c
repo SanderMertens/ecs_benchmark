@@ -5,7 +5,7 @@
 #define MEASURE_INTERVAL (25)
 #define MEASURE_TIME (0.5)
 
-// #define PRETTY_TIME_FMT
+#define PRETTY_TIME_FMT
 
 typedef struct bench_t {
     const char *lbl;
@@ -575,6 +575,31 @@ void get_pair(const char *label, int32_t target_count) {
     ecs_os_free(tgt);
 }
 
+void get_inherited(const char *label, int32_t depth) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t id = ecs_set(world, 0, EcsComponent, {4, 4});
+
+    ecs_entity_t base = ecs_new_w_id(world, id);
+    for (int i = 0; i < depth; i ++) {
+        base = ecs_new_w_pair(world, EcsIsA, base);
+    }
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_pair(world, entities[e], EcsIsA, base);
+    }
+
+    bench_t b = bench_begin(label, ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_get_id(world, entities[e], id);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
 void ref_init(void) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
@@ -667,6 +692,33 @@ void add_existing(const char* label, int32_t id_count, bool component) {
     ecs_fini(world);
     ecs_os_free(entities);
     ecs_os_free(ids);
+}
+
+void add_remove_tag_to_components(const char *label, int32_t component_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+    ecs_entity_t *ids = create_ids(world, component_count, 4, true);
+    ecs_entity_t tag = ecs_new_id(world);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        for (int i = 0; i < component_count; i ++) {
+            ecs_add_id(world, entities[e], ids[i]);
+        }
+    }
+
+    bench_t b = bench_begin(label, 2 * ENTITY_COUNT);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_add_id(world, entities[e], tag);
+        }
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_remove_id(world, entities[e], tag);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(entities);
 }
 
 void add_remove_override(const char* label, int32_t id_count) {
@@ -860,6 +912,42 @@ void create_delete(const char *label, int32_t id_count, bool component) {
     ecs_os_free(ids);
 }
 
+void entity_init_delete(const char *label) {
+    ecs_world_t *world = ecs_mini();
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_entity_t e = ecs_entity_init(world, &(ecs_entity_desc_t){
+                .use_low_id = false /* default */
+            });
+
+            ecs_delete(world, e);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
+void entity_init_w_name_delete(const char *label) {
+    ecs_world_t *world = ecs_mini();
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_entity_t e = ecs_entity_init(world, &(ecs_entity_desc_t){
+                .name = "foo"
+            });
+
+            ecs_delete(world, e);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
 void create_delete_tree(const char *label, int32_t width, int32_t depth) {
     ecs_world_t *world = ecs_mini();
 
@@ -875,6 +963,7 @@ void create_delete_tree(const char *label, int32_t width, int32_t depth) {
             ecs_add_pair(world, e, EcsChildOf, cur);
             cur = e;
         }
+
         ecs_delete(world, root);
     } while (bench_next(&b));
     bench_end(&b);
@@ -887,12 +976,21 @@ void change_parent() {
 
     ecs_entity_t p1 = ecs_new_id(world);
     ecs_entity_t p2 = ecs_new_id(world);
-    ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, p2);
 
-    bench_t b = bench_begin("change_parent", 2);
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        ecs_add_pair(world, entities[e], EcsChildOf, p2);
+    }
+
+    bench_t b = bench_begin("change_parent", 2 * ENTITY_COUNT);
     do {
-        ecs_add_pair(world, e, EcsChildOf, p1);
-        ecs_add_pair(world, e, EcsChildOf, p2);
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_add_pair(world, entities[e], EcsChildOf, p1);
+        }
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_add_pair(world, entities[e], EcsChildOf, p2);
+        }
     } while (bench_next(&b));
     bench_end(&b);
 
@@ -903,12 +1001,16 @@ void change_parent_root() {
     ecs_world_t *world = ecs_mini();
 
     ecs_entity_t p = ecs_new_id(world);
-    ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, p);
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
 
-    bench_t b = bench_begin("change_parent_root", 2);
+    bench_t b = bench_begin("change_parent_root", 2 * ENTITY_COUNT);
     do {
-        ecs_remove_pair(world, e, EcsChildOf, p);
-        ecs_add_pair(world, e, EcsChildOf, p);
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_add_pair(world, entities[e], EcsChildOf, p);
+        }
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_remove_pair(world, entities[e], EcsChildOf, p);
+        }
     } while (bench_next(&b));
     bench_end(&b);
 
@@ -920,13 +1022,23 @@ void change_parent_w_name() {
 
     ecs_entity_t p1 = ecs_new_entity(world, "parent_1");
     ecs_entity_t p2 = ecs_new_entity(world, "parent_2");
-    ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, p2);
-    ecs_set_name(world, e, "child");
+    ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
+
+    for (int e = 0; e < ENTITY_COUNT; e ++) {
+        char name[256];
+        sprintf(name, "child_%d", e);
+        ecs_set_name(world, entities[e], name);
+        ecs_add_pair(world, entities[e], EcsChildOf, p2);
+    }
 
     bench_t b = bench_begin("change_parent_w_name", 2);
     do {
-        ecs_add_pair(world, e, EcsChildOf, p1);
-        ecs_add_pair(world, e, EcsChildOf, p2);
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_add_pair(world, entities[e], EcsChildOf, p1);
+        }
+        for (int e = 0; e < ENTITY_COUNT; e ++) {
+            ecs_add_pair(world, entities[e], EcsChildOf, p2);
+        }
     } while (bench_next(&b));
     bench_end(&b);
 
@@ -957,6 +1069,21 @@ void lookup(const char *label, int32_t depth) {
     bench_end(&b);
 
     ecs_os_free(lookup_str);
+
+    ecs_fini(world);
+}
+
+void set_name() {
+    ecs_world_t *world = ecs_mini();
+
+    ecs_entity_t e = ecs_new_id(world);
+
+    bench_t b = bench_begin("set_name", 2);
+    do {
+        ecs_set_name(world, e, "foo");
+        ecs_set_name(world, e, NULL);
+    } while (bench_next(&b));
+    bench_end(&b);
 
     ecs_fini(world);
 }
@@ -1120,6 +1247,44 @@ void filter_init_fini_inline(const char *label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
+void filter_simple_iter(const char *label, int32_t query_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, query_count, component ? 4 : 0, true);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < query_count; c ++) {
+            ecs_add_id(world, e, ids[c]);
+        }
+    }
+
+    ecs_filter_desc_t desc = {0};
+    for (int i = 0; i < query_count; i ++) {
+        desc.terms[i].id = ids[i];
+        desc.terms[i].src.flags = EcsSelf;
+    }
+    ecs_filter_t *q = ecs_filter_init(world, &desc);
+    ecs_entity_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_filter_iter(world, q);
+        while (ecs_filter_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_filter_fini(q);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
 void filter_iter(const char *label, int32_t id_count, bool component, int32_t query_count) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
@@ -1139,13 +1304,21 @@ void filter_iter(const char *label, int32_t id_count, bool component, int32_t qu
         desc.terms[i].src.flags = EcsSelf;
     }
     ecs_filter_t *f = ecs_filter_init(world, &desc);
+    int32_t result = 0;
 
     bench_t b = bench_begin(label, 1);
     do {
         ecs_iter_t it = ecs_filter_iter(world, f);
-        while (ecs_filter_next(&it)) { }
+        while (ecs_filter_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
     } while (bench_next(&b));
     bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
+        result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1181,13 +1354,21 @@ void filter_iter_up(const char *label, bool component, bool query_self) {
         desc.terms[1].src.flags = EcsSelf;
     }
     ecs_filter_t *f = ecs_filter_init(world, &desc);
+    int32_t result = 0;
 
     bench_t b = bench_begin(label, 1);
     do {
         ecs_iter_t it = ecs_filter_iter(world, f);
-        while (ecs_filter_next(&it)) { }
+        while (ecs_filter_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
     } while (bench_next(&b));
     bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
+        result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1223,20 +1404,170 @@ void filter_iter_up_w_mut(const char *label, bool component, bool query_self) {
         desc.terms[1].src.flags = EcsSelf;
     }
     ecs_filter_t *f = ecs_filter_init(world, &desc);
+    int32_t result = 0;
 
     bench_t b = bench_begin(label, 1);
     do {
         ecs_iter_t it = ecs_filter_iter(world, f);
-        while (ecs_filter_next(&it)) { }
+        while (ecs_filter_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
 
         ecs_remove_id(world, parent_with, ids[0]);
         ecs_add_id(world, parent_with, ids[0]);
     } while (bench_next(&b));
     bench_end(&b);
 
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
+        result);
+
     ecs_filter_fini(f);
     ecs_fini(world);
     ecs_os_free(ids);
+}
+
+void rule_init_fini(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    bench_t b = bench_begin(label, 2);
+    do {
+        ecs_filter_desc_t desc = {0};
+        for (int i = 0; i < id_count; i ++) {
+            desc.terms[i].id = ids[i];
+            desc.terms[i].src.flags = EcsSelf;
+        }
+
+        ecs_rule_t *f = ecs_rule_init(world, &desc);
+        ecs_rule_fini(f);
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void rule_simple_iter(const char *label, int32_t query_count, bool component) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, query_count, component ? 4 : 0, true);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < query_count; c ++) {
+            ecs_add_id(world, e, ids[c]);
+        }
+    }
+
+    ecs_filter_desc_t desc = {0};
+    for (int i = 0; i < query_count; i ++) {
+        desc.terms[i].id = ids[i];
+        desc.terms[i].src.flags = EcsSelf;
+    }
+    ecs_rule_t *q = ecs_rule_init(world, &desc);
+    ecs_entity_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_rule_iter(world, q);
+        while (ecs_rule_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_rule_fini(q);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void rule_iter(const char *label, int32_t id_count, bool component, int32_t query_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < id_count; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+    }
+
+    ecs_filter_desc_t desc = {0};
+    for (int i = 0; i < query_count; i ++) {
+        desc.terms[i].id = ids[i];
+        desc.terms[i].src.flags = EcsSelf;
+    }
+    ecs_rule_t *f = ecs_rule_init(world, &desc);
+    int32_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_rule_iter(world, f);
+        while (ecs_rule_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
+        result);
+
+    ecs_rule_fini(f);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void rule_inheritance(const char *label, int32_t depth, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count, 0, true);
+
+    ecs_entity_t id = ecs_new_id(world);
+    ecs_entity_t cur = id;
+    for (int i = 0; i < depth; i ++) {
+        cur = ecs_new_w_pair(world, EcsIsA, cur);
+    }
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < id_count; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+        ecs_add_id(world, e, cur); /* derived id */
+    }
+
+    ecs_rule_t *f = ecs_rule(world, {
+        .terms = {{ id }}
+    });
+    int32_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_rule_iter(world, f);
+        while (ecs_rule_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
+        result);
+
+    ecs_rule_fini(f);
+    ecs_fini(world);
 }
 
 void query_init_fini(const char *label, int32_t id_count) {
@@ -1260,20 +1591,28 @@ void query_init_fini(const char *label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
-void query_simple_iter(const char *label, int32_t query_count, bool component) {
+void query_iter(const char *label, int32_t table_count, int32_t term_count, bool component) {
     ecs_world_t *world = ecs_mini();
-    ecs_entity_t *ids = create_ids(world, query_count, component ? 4 : 0, true);
+    ecs_entity_t *term_ids = create_ids(world, term_count, component ? 4 : 0, true);
+    ecs_entity_t *table_ids = create_ids(world, table_count, 0, true);
 
-    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
-        ecs_entity_t e = ecs_new_id(world);
-        for (int c = 0; c < query_count; c ++) {
-            ecs_add_id(world, e, ids[c]);
+    for (int i = 0; i < table_count; i ++) {
+        for (int j = 0; j < QUERY_ENTITY_COUNT / table_count; j ++) {
+            ecs_entity_t e = ecs_new_id(world);
+
+            /* Make sure entities have all queried for components */
+            for (int c = 0; c < term_count; c ++) {
+                ecs_add_id(world, e, term_ids[c]);
+            }
+
+            /* Make sure entities are spread over different tables */
+            ecs_add_id(world, e, table_ids[i]);
         }
     }
 
     ecs_query_desc_t desc = {0};
-    for (int i = 0; i < query_count; i ++) {
-        desc.filter.terms[i].id = ids[i];
+    for (int i = 0; i < term_count; i ++) {
+        desc.filter.terms[i].id = term_ids[i];
         desc.filter.terms[i].src.flags = EcsSelf;
     }
     ecs_query_t *q = ecs_query_init(world, &desc);
@@ -1295,28 +1634,33 @@ void query_simple_iter(const char *label, int32_t query_count, bool component) {
 
     ecs_query_fini(q);
     ecs_fini(world);
-    ecs_os_free(ids);
+    ecs_os_free(term_ids);
+    ecs_os_free(table_ids);
 }
 
-void query_iter(const char *label, int32_t id_count, bool component, int32_t query_count) {
+void query_iter_empty(const char *label, int32_t table_count) {
     ecs_world_t *world = ecs_mini();
-    ecs_entity_t *ids = create_ids(world, id_count, component ? 4 : 0, true);
+    ecs_entity_t *table_ids = create_ids(world, table_count + 1, 0, true);
 
-    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
-        ecs_entity_t e = ecs_new_id(world);
-        for (int c = 0; c < id_count; c ++) {
-            if (flip_coin()) {
-                ecs_add_id(world, e, ids[c]);
+    for (int i = 0; i < table_count; i ++) {
+        for (int j = 0; j < QUERY_ENTITY_COUNT / table_count; j ++) {
+            ecs_entity_t e = ecs_new_id(world);
+
+            /* Make sure entities have all queried for components */
+            ecs_add_id(world, e, table_ids[i]);
+
+            /* Make sure entities are spread over different tables */
+            ecs_add_id(world, e, table_ids[i]);
+
+            if (i != 0) {
+                ecs_delete(world, e);
             }
         }
     }
 
-    ecs_query_desc_t desc = {0};
-    for (int i = 0; i < query_count; i ++) {
-        desc.filter.terms[i].id = ids[i];
-        desc.filter.terms[i].src.flags = EcsSelf;
-    }
-    ecs_query_t *q = ecs_query_init(world, &desc);
+    ecs_query_t *q = ecs_query(world, {
+        .filter.terms = {{ table_ids[table_count], .src.flags = EcsSelf }}
+    });
     ecs_entity_t result = 0;
 
     bench_t b = bench_begin(label, 1);
@@ -1327,6 +1671,80 @@ void query_iter(const char *label, int32_t id_count, bool component, int32_t que
                 result += it.entities[i];
             }
         }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_query_fini(q);
+    ecs_fini(world);
+    ecs_os_free(table_ids);
+}
+
+void query_iter_rnd(const char *label, int32_t id_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, id_count + 1, 0, true);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new_id(world);
+        for (int c = 0; c < id_count; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+
+        ecs_add_id(world, e, ids[id_count]);
+    }
+
+    ecs_query_t *q = ecs_query(world, {
+        .filter.terms = {{ ids[id_count], .src.flags = EcsSelf }}
+    });
+    ecs_entity_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_query_iter(world, q);
+        while (ecs_query_next(&it)) {
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_query_fini(q);
+    ecs_fini(world);
+    ecs_os_free(ids);
+}
+
+void query_count(const char *label, int32_t table_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *ids = create_ids(world, table_count + 1, 0, true);
+
+    for (int i = 0; i < table_count; i ++) {
+        for (int j = 0; j < QUERY_ENTITY_COUNT / table_count; j ++) {
+            ecs_entity_t e = ecs_new_id(world);
+
+            /* Make sure entities have queried for component */
+            ecs_add_id(world, e, ids[table_count]);
+
+            /* Make sure entities are spread over different tables */
+            ecs_add_id(world, e, ids[i]);
+        }
+    }
+
+    ecs_query_t *q = ecs_query(world, {
+        .filter.terms = {{ ids[table_count], .src.flags = EcsSelf }}
+    });
+    int32_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        result += ecs_query_entity_count(q);
     } while (bench_next(&b));
     bench_end(&b);
 
@@ -1358,6 +1776,12 @@ int main(int argc, char *argv[]) {
     get_id("get_16_ids", 16);
     get_pair("get_pair", 1);
     get_pair("get_pair_16_targets", 16);
+
+    // Get inherited
+    get_inherited("get_inherited_depth_1", 1);
+    get_inherited("get_inherited_depth_2", 2);
+    get_inherited("get_inherited_depth_16", 16);
+    get_inherited("get_inherited_depth_32", 32);
 
     // Get mut
     get_mut_id("get_mut_id", 1);
@@ -1391,6 +1815,13 @@ int main(int argc, char *argv[]) {
     add_existing("add_existing_16_tags", 16, false);
     add_existing("add_existing_1_component", 1, true);
     add_existing("add_existing_16_components", 16, true);
+
+    // Add remove tag to components
+    add_remove_tag_to_components("add_remove_tag_to_1_component", 1);
+    add_remove_tag_to_components("add_remove_tag_to_4_components", 4);
+    add_remove_tag_to_components("add_remove_tag_to_8_components", 8);
+    add_remove_tag_to_components("add_remove_tag_to_16_components", 16);
+    add_remove_tag_to_components("add_remove_tag_to_64_components", 64);
 
     // Add override
     add_remove_override("add_remove_override_1", 1);
@@ -1441,6 +1872,10 @@ int main(int argc, char *argv[]) {
     create_delete("create_delete_2_components", 2, true);
     create_delete("create_delete_16_components", 16, true);
 
+    // Entity init delete
+    entity_init_delete("entity_init_delete");
+    entity_init_delete("entity_init_w_name_delete");
+
     // Create delete tree
     create_delete_tree("create_delete_tree_w1_d1", 1, 1);
     create_delete_tree("create_delete_tree_w1_d10", 1, 10);
@@ -1473,6 +1908,9 @@ int main(int argc, char *argv[]) {
     lookup("lookup_depth_10", 10);
     lookup("lookup_depth_100", 100);
 
+    // Set name
+    set_name();
+
     // Emit
     emit("emit_0_observers", 0);
     emit("emit_1_observer", 1);
@@ -1497,10 +1935,18 @@ int main(int argc, char *argv[]) {
     modified("modified_10_observers", 10);
     modified("modified_100_observers", 100);
 
+    // Filter simple iter
+    filter_simple_iter("filter_simple_iter_1_tags", 1, false);
+    filter_simple_iter("filter_simple_iter_8_tags", 8, false);
+    filter_simple_iter("filter_simple_iter_1_component", 1, true);
+    filter_simple_iter("filter_simple_iter_8_components", 8, true);
+
     // Filter init fini
     filter_init_fini("filter_init_fini_1_ids", 1);
+    filter_init_fini("filter_init_fini_8_ids", 8);
     filter_init_fini("filter_init_fini_16_ids", 16);
     filter_init_fini_inline("filter_init_fini_inline_1_ids", 1);
+    filter_init_fini_inline("filter_init_fini_inline_8_ids", 8);
     filter_init_fini_inline("filter_init_fini_inline_16_ids", 16);
 
     // Filter iter
@@ -1521,19 +1967,86 @@ int main(int argc, char *argv[]) {
     filter_iter_up_w_mut("filter_iter_up_w_mut_8_tags", false, false);
     filter_iter_up_w_mut("filter_iter_up_w_mut_8_tags_w_self", false, true);
 
+    // Rule init fini
+    rule_init_fini("rule_init_fini_1_ids", 1);
+    rule_init_fini("rule_init_fini_8_ids", 8);
+    rule_init_fini("rule_init_fini_16_ids", 16);
+
+    // Rule simple iter
+    rule_simple_iter("rule_simple_iter_1_tags", 1, false);
+    rule_simple_iter("rule_simple_iter_8_tags", 8, false);
+    rule_simple_iter("rule_simple_iter_1_component", 1, true);
+    rule_simple_iter("rule_simple_iter_8_component", 8, true);
+
+    // Rule iter
+    rule_iter("rule_iter_8_tags_1_term", 8, false, 1);
+    rule_iter("rule_iter_8_tags_4_terms", 8, false, 4);
+    rule_iter("rule_iter_16_tags_1_term", 16, false, 1);
+    rule_iter("rule_iter_16_tags_4_terms", 16, false, 4);
+    rule_iter("rule_iter_8_components_1_term", 8, true, 1);
+    rule_iter("rule_iter_8_components_4_terms", 8, true, 4);
+    rule_iter("rule_iter_16_components_1_term", 16, true, 1);
+    rule_iter("rule_iter_16_components_4_terms", 16, true, 4);
+
+    // Rule inheritance
+    rule_inheritance("rule_inherit_depth_1_tables_1", 1, 0);
+    rule_inheritance("rule_inherit_depth_1_tables_1024", 1, 10);
+    rule_inheritance("rule_inherit_depth_2_tables_1", 2, 0);
+    rule_inheritance("rule_inherit_depth_2_tables_1024", 2, 10);
+    rule_inheritance("rule_inherit_depth_8_tables_1", 8, 0);
+    rule_inheritance("rule_inherit_depth_8_tables_1024", 8, 10);
+    rule_inheritance("rule_inherit_depth_16_tables_1", 16, 0);
+    rule_inheritance("rule_inherit_depth_16_tables_1024", 16, 10);
+
     // Query init fini
     query_init_fini("query_init_fini_1_ids", 1);
+    query_init_fini("query_init_fini_8_ids", 8);
     query_init_fini("query_init_fini_16_ids", 16);
 
     // Query iter
-    query_iter("query_iter_8_tags_1_term", 8, false, 1);
-    query_iter("query_iter_8_tags_4_terms", 8, false, 4);
-    query_iter("query_iter_16_tags_1_term", 16, false, 1);
-    query_iter("query_iter_16_tags_4_terms", 16, false, 4);
-    query_iter("query_iter_8_components_1_term", 8, true, 1);
-    query_iter("query_iter_8_components_4_terms", 8, true, 4);
-    query_iter("query_iter_16_components_1_term", 16, true, 1);
-    query_iter("query_iter_16_components_4_terms", 16, true, 4);
+    query_iter("query_iter_1_table_1_tag", 1, 1, false);
+    query_iter("query_iter_2_tables_1_tag", 2, 1, false);
+    query_iter("query_iter_4_tables_1_tag", 4, 1, false);
+    query_iter("query_iter_8_tables_1_tag", 8, 1, false);
+    query_iter("query_iter_16_tables_1_tag", 16, 1, false);
+    query_iter("query_iter_32_tables_1_tag", 32, 1, false);
+    query_iter("query_iter_64_tables_1_tag", 64, 1, false);
+    query_iter("query_iter_128_tables_1_tag", 128, 1, false);
+    query_iter("query_iter_256_tables_1_tag", 256, 1, false);
+    query_iter("query_iter_512_tables_1_tag", 512, 1, false);
+    query_iter("query_iter_1024_tables_1_tag", 1024, 1, false);
+    query_iter("query_iter_4096_tables_1_tag", 4096, 1, false);
+    query_iter("query_iter_4096_tables_4_tags", 4096, 8, false);
+    query_iter("query_iter_4096_tables_4_comps", 4096, 8, true);
+    query_iter("query_iter_4096_tables_8_tags", 4096, 8, false);
+    query_iter("query_iter_4096_tables_8_comps", 4096, 8, true);
+    query_iter("query_iter_65536_tables_4_tags", 65536, 8, false);
+    query_iter("query_iter_65536_tables_4_comps", 65536, 8, true);
+    query_iter("query_iter_65536_tables_8_tags", 65536, 8, false);
+    query_iter("query_iter_65536_tables_8_comps", 65536, 8, true);
+
+    // Query empty iter
+    query_iter_empty("query_iter_255_empty_1_fill", 256);
+    query_iter_empty("query_iter_1023_empty_1_fill", 1024);
+
+    // Query iter w/random component distribution
+    query_iter_rnd("query_iter_rnd_8_tags", 8);
+    query_iter_rnd("query_iter_rnd_16_tags", 16);
+
+    // Query count
+    query_count("query_count_1_table", 1);
+    query_count("query_count_2_tables", 2);
+    query_count("query_count_4_tables", 4);
+    query_count("query_count_8_tables", 8);
+    query_count("query_count_16_tables", 16);
+    query_count("query_count_32_tables", 32);
+    query_count("query_count_64_tables", 64);
+    query_count("query_count_128_tables", 128);
+    query_count("query_count_256_tables", 256);
+    query_count("query_count_512_tables", 512);
+    query_count("query_count_1024_tables", 1024);
+    query_count("query_count_4096_tables", 4096);
+    query_count("query_count_65536_tables", 65536);
 
     // Progress
     world_progress("progress_0_systems", 0);

@@ -4,6 +4,7 @@
     "value": {
         "author": "Sander Mertens",
         "description": "ECS benchmark comparison",
-        "use": ["flecs"]
+        "use": ["flecs"],
+        "standalone": true
     }
 }
