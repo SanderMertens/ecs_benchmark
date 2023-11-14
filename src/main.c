@@ -36,7 +36,7 @@ typedef struct bench_t {
 #define COLOR(v)\
     ((v < FRAC_MILLION) ? ECS_GREEN : (v < FRAC_THOUSAND) ? ECS_YELLOW : ECS_RED)
 
-bool flip_coin() {
+bool flip_coin(void) {
     int r = rand();
     return r >= ((float)RAND_MAX / 2.0f);
 }
@@ -789,6 +789,39 @@ void add_remove_hooks(const char* label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
+static void AddId(ecs_iter_t *it) {
+    ecs_entity_t add_id = *(ecs_entity_t*)it->ctx;
+    for (int i = 0; i < it->count; i ++) {
+        ecs_add_id(it->world, it->entities[i], add_id);
+    }
+}
+
+void create_w_add_in_observer(const char *label, int32_t entity_count) {
+    ecs_world_t *world = ecs_mini();
+    ecs_entity_t *entities = create_ids(world, entity_count, 0, false);
+
+    ecs_entity_t id = ecs_new_id(world);
+    ecs_entity_t add_id = ecs_new_id(world);
+
+    ecs_observer(world, {
+        .filter.terms = {{ id }},
+        .events = { EcsOnAdd },
+        .callback = AddId,
+        .ctx = &add_id
+    });
+
+    bench_t b = bench_begin(label, entity_count);
+    do {
+        for (int i = 0; i < entity_count; i ++) {
+            ecs_add_id(world, entities[i], id);
+            ecs_remove_id(world, entities[i], id);
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    ecs_fini(world);
+}
+
 void add_remove_cmd(const char* label, int32_t id_count, bool component) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
@@ -971,7 +1004,7 @@ void create_delete_tree(const char *label, int32_t width, int32_t depth) {
     ecs_fini(world);
 }
 
-void change_parent() {
+void change_parent(void) {
     ecs_world_t *world = ecs_mini();
 
     ecs_entity_t p1 = ecs_new_id(world);
@@ -997,7 +1030,7 @@ void change_parent() {
     ecs_fini(world);
 }
 
-void change_parent_root() {
+void change_parent_root(void) {
     ecs_world_t *world = ecs_mini();
 
     ecs_entity_t p = ecs_new_id(world);
@@ -1017,7 +1050,7 @@ void change_parent_root() {
     ecs_fini(world);
 }
 
-void change_parent_w_name() {
+void change_parent_w_name(void) {
     ecs_world_t *world = ecs_mini();
 
     ecs_entity_t p1 = ecs_new_entity(world, "parent_1");
@@ -1073,7 +1106,7 @@ void lookup(const char *label, int32_t depth) {
     ecs_fini(world);
 }
 
-void set_name() {
+void set_name(void) {
     ecs_world_t *world = ecs_mini();
 
     ecs_entity_t e = ecs_new_id(world);
@@ -1862,6 +1895,12 @@ int main(int argc, char *argv[]) {
     add_remove_hooks("add_remove_hooks_2", 2);
     add_remove_hooks("add_remove_hooks_16", 16);
     add_remove_hooks("add_remove_hooks_32", 32);
+
+    // Create with add in observer
+    create_w_add_in_observer("create_100_w_add_in_observer", 100);
+    create_w_add_in_observer("create_1k_w_add_in_observer", 1000);
+    create_w_add_in_observer("create_10k_w_add_in_observer", 10 * 1000);
+    create_w_add_in_observer("create_50k_w_add_in_observer", 50 * 1000);
 
     // Create delete
     create_delete("create_delete_empty", 0, false);
