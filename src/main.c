@@ -111,12 +111,12 @@ void bench_print(const char *label, float v) {
 }
 #else
 void header_print(void) {
-    printf("Benchmark                            Measurement\n");
+    printf("Benchmark                              Measurement\n");
 }
 
 void bench_print(const char *label, float v) {
     printf("%s %*s  %s%.2f%s%s\n", 
-        label, (int)(34 - strlen(label)), "", COLOR(v), v * BILLION, spacing(v * BILLION), ECS_NORMAL);
+        label, (int)(36 - strlen(label)), "", COLOR(v), v * BILLION, spacing(v * BILLION), ECS_NORMAL);
 }
 #endif
 
@@ -1280,7 +1280,7 @@ void filter_init_fini_inline(const char *label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
-void filter_simple_iter(const char *label, int32_t query_count, bool component) {
+void filter_simple_iter(const char *label, int32_t query_count, bool component, ecs_flags32_t flags) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, query_count, component ? 4 : 0, true);
 
@@ -1294,7 +1294,7 @@ void filter_simple_iter(const char *label, int32_t query_count, bool component) 
     ecs_filter_desc_t desc = {0};
     for (int i = 0; i < query_count; i ++) {
         desc.terms[i].id = ids[i];
-        desc.terms[i].src.flags = EcsSelf;
+        desc.terms[i].src.flags = flags;
     }
     ecs_filter_t *q = ecs_filter_init(world, &desc);
     ecs_entity_t result = 0;
@@ -1482,7 +1482,7 @@ void rule_init_fini(const char *label, int32_t id_count) {
     ecs_os_free(ids);
 }
 
-void rule_simple_iter(const char *label, int32_t query_count, bool component) {
+void rule_simple_iter(const char *label, int32_t query_count, bool component, ecs_flags32_t flags) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *ids = create_ids(world, query_count, component ? 4 : 0, true);
 
@@ -1496,7 +1496,7 @@ void rule_simple_iter(const char *label, int32_t query_count, bool component) {
     ecs_filter_desc_t desc = {0};
     for (int i = 0; i < query_count; i ++) {
         desc.terms[i].id = ids[i];
-        desc.terms[i].src.flags = EcsSelf;
+        desc.terms[i].src.flags = flags;
     }
     ecs_rule_t *q = ecs_rule_init(world, &desc);
     ecs_entity_t result = 0;
@@ -1581,7 +1581,7 @@ void rule_inheritance(const char *label, int32_t depth, int32_t id_count) {
     }
 
     ecs_rule_t *f = ecs_rule(world, {
-        .terms = {{ id }}
+        .terms = {{ id, .src.flags = EcsSelf }}
     });
     int32_t result = 0;
 
@@ -1974,11 +1974,17 @@ int main(int argc, char *argv[]) {
     modified("modified_10_observers", 10);
     modified("modified_100_observers", 100);
 
+    // Filter simple iter self
+    filter_simple_iter("filter_simple_iter_self_1_tags", 1, false, EcsSelf);
+    filter_simple_iter("filter_simple_iter_self_8_tags", 8, false, EcsSelf);
+    filter_simple_iter("filter_simple_iter_self_1_component", 1, true, EcsSelf);
+    filter_simple_iter("filter_simple_iter_self_8_components", 8, true, EcsSelf);
+
     // Filter simple iter
-    filter_simple_iter("filter_simple_iter_1_tags", 1, false);
-    filter_simple_iter("filter_simple_iter_8_tags", 8, false);
-    filter_simple_iter("filter_simple_iter_1_component", 1, true);
-    filter_simple_iter("filter_simple_iter_8_components", 8, true);
+    filter_simple_iter("filter_simple_iter_1_tags", 1, false, 0);
+    filter_simple_iter("filter_simple_iter_8_tags", 8, false, 0);
+    filter_simple_iter("filter_simple_iter_1_component", 1, true, 0);
+    filter_simple_iter("filter_simple_iter_8_components", 8, true, 0);
 
     // Filter init fini
     filter_init_fini("filter_init_fini_1_ids", 1);
@@ -2011,11 +2017,17 @@ int main(int argc, char *argv[]) {
     rule_init_fini("rule_init_fini_8_ids", 8);
     rule_init_fini("rule_init_fini_16_ids", 16);
 
+    // Rule simple iter w/Self flags
+    rule_simple_iter("rule_simple_iter_self_1_tags", 1, false, EcsSelf);
+    rule_simple_iter("rule_simple_iter_self_8_tags", 8, false, EcsSelf);
+    rule_simple_iter("rule_simple_iter_self_1_component", 1, true, EcsSelf);
+    rule_simple_iter("rule_simple_iter_self_8_component", 8, true, EcsSelf);
+
     // Rule simple iter
-    rule_simple_iter("rule_simple_iter_1_tags", 1, false);
-    rule_simple_iter("rule_simple_iter_8_tags", 8, false);
-    rule_simple_iter("rule_simple_iter_1_component", 1, true);
-    rule_simple_iter("rule_simple_iter_8_component", 8, true);
+    rule_simple_iter("rule_simple_iter_1_tags", 1, false, 0);
+    rule_simple_iter("rule_simple_iter_8_tags", 8, false, 0);
+    rule_simple_iter("rule_simple_iter_1_component", 1, true, 0);
+    rule_simple_iter("rule_simple_iter_8_component", 8, true, 0);
 
     // Rule iter
     rule_iter("rule_iter_8_tags_1_term", 8, false, 1);
