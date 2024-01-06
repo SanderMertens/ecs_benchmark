@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MEASURE_INTERVAL (25)
+#define WARMUP_INTERVALS (5)
+#define MEASURE_INTERVAL (50)
 #define MEASURE_TIME (0.5)
 
 #define PRETTY_TIME_FMT
@@ -135,18 +136,28 @@ bench_t bench_begin(const char *lbl, int32_t count) {
     b.interval = MEASURE_INTERVAL;
     b.intervals = 0;
     b.count = count;
-    ecs_time_measure(&b.t);
     return b;
+}
+
+double time_measure(
+    ecs_time_t *start)
+{
+    ecs_time_t stop;
+    ecs_os_get_time(&stop);
+    return ecs_time_to_double(ecs_time_sub(stop, *start));
 }
 
 bool bench_next(bench_t *b) {
     if (!--b->interval) {
         b->intervals ++;
-        ecs_time_t t = b->t;
-        double dt = ecs_time_measure(&t);
-        if (dt > MEASURE_TIME) {
-            b->dt = dt;
-            return false;
+        if (b->intervals > WARMUP_INTERVALS) {
+            double dt = time_measure(&b->t);
+            if (dt > MEASURE_TIME) {
+                b->dt = dt;
+                return false;
+            }
+        } else if (b->intervals == WARMUP_INTERVALS) {
+            ecs_os_get_time(&b->t);
         }
         b->interval = MEASURE_INTERVAL;
     }
@@ -154,7 +165,7 @@ bool bench_next(bench_t *b) {
 }
 
 void bench_end(bench_t *b) {
-    bench_print(b->lbl, b->dt / (b->intervals * MEASURE_INTERVAL * b->count));
+    bench_print(b->lbl, b->dt / ((b->intervals - WARMUP_INTERVALS) * MEASURE_INTERVAL * b->count));
 }
 
 /* -- benchmark code -- */
