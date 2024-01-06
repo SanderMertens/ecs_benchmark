@@ -184,8 +184,14 @@ ecs_entity_t* create_ids(ecs_world_t *world, int32_t count, ecs_size_t size, boo
     }
 }
 
+void baseline(void) {
+    bench_t b = bench_begin("baseline", 1);
+    do {
+    } while (bench_next(&b));
+    bench_end(&b);
+}
+
 void world_mini_fini(void) {
-    ecs_os_set_api_defaults();
     bench_t b = bench_begin("world_mini_fini", 1);
     do {
         ecs_world_t *world = ecs_mini();
@@ -195,7 +201,6 @@ void world_mini_fini(void) {
 }
 
 void world_init_fini(void) {
-    ecs_os_set_api_defaults();
     bench_t b = bench_begin("world_init_fini", 1);
     do {
         ecs_world_t *world = ecs_init();
@@ -1799,7 +1804,11 @@ void query_count(const char *label, int32_t table_count) {
 }
 
 int main(int argc, char *argv[]) {
+    ecs_os_set_api_defaults(); // Required for timers to work
+
     header_print();
+
+    baseline();
 
     // World init fini
     world_mini_fini();
