@@ -132,6 +132,7 @@ bench_t bench_begin(const char *lbl, int32_t count) {
 
 bool bench_next(bench_t *b) {
     if (!--b->interval) {
+        b->intervals ++;
         ecs_time_t t = b->t;
         double dt = ecs_time_measure(&t);
         if (dt > MEASURE_TIME) {
@@ -140,12 +141,11 @@ bool bench_next(bench_t *b) {
         }
         b->interval = MEASURE_INTERVAL;
     }
-    b->intervals ++;
     return true;
 }
 
 void bench_end(bench_t *b) {
-    bench_print(b->lbl, b->dt / (b->intervals * b->count));
+    bench_print(b->lbl, b->dt / (b->intervals * MEASURE_INTERVAL * b->count));
 }
 
 /* -- benchmark code -- */
