@@ -2,18 +2,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MEASURE_INTERVAL (25)
+#define WARMUP_INTERVALS (5)
+#define MEASURE_INTERVAL (50)
 #define MEASURE_TIME (0.5)
 
 #define PRETTY_TIME_FMT
 
 typedef struct bench_t {
-    const char *lbl;
+    // Benchmark state
+    // The number of times a benchmark is run before taking a measurement.
+    uint32_t interval;
+    // The total number of intervals that have been run.
+    uint32_t intervals;
+    // The time at which the benchmark was started.
     ecs_time_t t;
+    // The time it took to run the benchmark.
     double dt;
-    int32_t interval;
-    int32_t intervals;
-    int32_t count;
+
+    // Benchmark settings
+    // The label of the benchmark.
+    const char *lbl;
+    // The number of times the operation is run per interval.
+    uint32_t count;
 } bench_t;
 
 #define THOUSAND (1000.0)
@@ -101,13 +111,13 @@ char* bench_asprintf(
 
 #ifdef PRETTY_TIME_FMT
 void header_print(void) {
-    printf("| Benchmark                           | Measurement  |\n");
-    printf("|-------------------------------------|--------------|\n");
+    printf("| Benchmark                             | Measurement  |\n");
+    printf("|---------------------------------------|--------------|\n");
 }
 
 void bench_print(const char *label, float v) {
     printf("| %s %*s | %s%.2f%s%s%s |\n", 
-        label, (int)(34 - strlen(label)), "", COLOR(v), NUM(v), SYM(v), spacing(NUM(v)), ECS_NORMAL);
+        label, (int)(36 - strlen(label)), "", COLOR(v), NUM(v), SYM(v), spacing(NUM(v)), ECS_NORMAL);
 }
 #else
 void header_print(void) {
@@ -126,26 +136,36 @@ bench_t bench_begin(const char *lbl, int32_t count) {
     b.interval = MEASURE_INTERVAL;
     b.intervals = 0;
     b.count = count;
-    ecs_time_measure(&b.t);
     return b;
+}
+
+double time_measure(
+    ecs_time_t *start)
+{
+    ecs_time_t stop;
+    ecs_os_get_time(&stop);
+    return ecs_time_to_double(ecs_time_sub(stop, *start));
 }
 
 bool bench_next(bench_t *b) {
     if (!--b->interval) {
-        ecs_time_t t = b->t;
-        double dt = ecs_time_measure(&t);
-        if (dt > MEASURE_TIME) {
-            b->dt = dt;
-            return false;
+        b->intervals ++;
+        if (b->intervals > WARMUP_INTERVALS) {
+            double dt = time_measure(&b->t);
+            if (dt > MEASURE_TIME) {
+                b->dt = dt;
+                return false;
+            }
+        } else if (b->intervals == WARMUP_INTERVALS) {
+            ecs_os_get_time(&b->t);
         }
         b->interval = MEASURE_INTERVAL;
     }
-    b->intervals ++;
     return true;
 }
 
 void bench_end(bench_t *b) {
-    bench_print(b->lbl, b->dt / (b->intervals * b->count));
+    bench_print(b->lbl, b->dt / ((b->intervals - WARMUP_INTERVALS) * MEASURE_INTERVAL * b->count));
 }
 
 /* -- benchmark code -- */
@@ -175,8 +195,14 @@ ecs_entity_t* create_ids(ecs_world_t *world, int32_t count, ecs_size_t size, boo
     }
 }
 
+void baseline(void) {
+    bench_t b = bench_begin("baseline", 1);
+    do {
+    } while (bench_next(&b));
+    bench_end(&b);
+}
+
 void world_mini_fini(void) {
-    ecs_os_set_api_defaults();
     bench_t b = bench_begin("world_mini_fini", 1);
     do {
         ecs_world_t *world = ecs_mini();
@@ -186,7 +212,6 @@ void world_mini_fini(void) {
 }
 
 void world_init_fini(void) {
-    ecs_os_set_api_defaults();
     bench_t b = bench_begin("world_init_fini", 1);
     do {
         ecs_world_t *world = ecs_init();
@@ -1790,7 +1815,11 @@ void query_count(const char *label, int32_t table_count) {
 }
 
 int main(int argc, char *argv[]) {
+    ecs_os_set_api_defaults(); // Required for timers to work
+
     header_print();
+
+    baseline();
 
     // World init fini
     world_mini_fini();
