@@ -101,13 +101,13 @@ char* bench_asprintf(
 
 #ifdef PRETTY_TIME_FMT
 void header_print(void) {
-    printf("| Benchmark                           | Measurement  |\n");
-    printf("|-------------------------------------|--------------|\n");
+    printf("| Benchmark                             | Measurement  |\n");
+    printf("|---------------------------------------|--------------|\n");
 }
 
 void bench_print(const char *label, float v) {
     printf("| %s %*s | %s%.2f%s%s%s |\n", 
-        label, (int)(34 - strlen(label)), "", COLOR(v), NUM(v), SYM(v), spacing(NUM(v)), ECS_NORMAL);
+        label, (int)(36 - strlen(label)), "", COLOR(v), NUM(v), SYM(v), spacing(NUM(v)), ECS_NORMAL);
 }
 #else
 void header_print(void) {
