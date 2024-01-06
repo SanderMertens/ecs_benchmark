@@ -13,9 +13,14 @@
 #define PRETTY_TIME_FMT
 
 typedef enum {
-    BenchTable,
-    BenchTableDetailed,
-    BenchCSV,
+    FormatDetailed       = 0b01,
+    FormatType           = 0b10,
+    
+    FormatHuman          = 0b00,
+    FormatHumanDetailed  = 0b01,
+
+    FormatCSV            = 0b10,
+    FormatCSVDetailed    = 0b11,
 } bench_result_format_t;
 
 typedef struct bench_t {
@@ -58,8 +63,7 @@ typedef struct bench_t {
 #define COLOR(v)\
     ((v < FRAC_MILLION) ? ECS_GREEN : (v < FRAC_THOUSAND) ? ECS_YELLOW : ECS_RED)
 
-bench_result_format_t g_format = BenchTable;
-bool g_detailed = false;
+bench_result_format_t g_format = 0;
 
 bool flip_coin(void) {
     int r = rand();
@@ -106,23 +110,25 @@ char* bench_asprintf(
     return result;
 }
 
+void do_not_optimize(uint32_t v) {
+    fprintf(stderr, "result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", v);
+}
+
 void header_print(void) {
     switch (g_format) {
-    case BenchTable:
-        if (g_detailed) {
-            printf("| Benchmark                             | Measurement  | Total (ns)   | Count          | Samples      |\n");
-            printf("|---------------------------------------|--------------|--------------|----------------|--------------|\n");
-        } else {
-            printf("| Benchmark                             | Measurement  |\n");
-            printf("|---------------------------------------|--------------|\n");
-        }
+    case FormatHuman:
+        printf("| Benchmark                             | Measurement  |\n");
+        printf("|---------------------------------------|--------------|\n");
         break;
-    case BenchCSV:
-        if (g_detailed) {
-            printf("Benchmark,Measurement (ns),Total (ns),Count,Samples\n");
-        } else {
-            printf("Benchmark,Measurement (ns)\n");
-        }
+    case FormatHuman | FormatDetailed:
+        printf("| Benchmark                             | Measurement  | Total (ns)   | Count          | Samples      |\n");
+        printf("|---------------------------------------|--------------|--------------|----------------|--------------|\n");
+        break;
+    case FormatCSV:
+        printf("Benchmark,Measurement (ns)\n");
+        break;
+    case FormatCSV | FormatDetailed:
+        printf("Benchmark,Measurement (ns),Total (ns),Count,Samples\n");
         break;
     }
 }
@@ -185,35 +191,36 @@ bool bench_next(bench_t *b) {
 void bench_end(bench_t *b) {
     const char* label = b->lbl;
     // Note: -1 because we don't count the warmup
-    uint64_t count = ((uint64_t)b->samples - 1) * (uint64_t)MEASURE_INTERVAL * (uint64_t)b->count;
+    uint32_t samples = b->samples - 1;
+    uint64_t count = (uint64_t)samples * (uint64_t)MEASURE_INTERVAL * (uint64_t)b->count;
+
     uint64_t total_nanos = ecs_time_to_nanos(b->total);
+    double measurement_nanos = (double)total_nanos / count;
+
+    double total_secs = ecs_time_to_double(b->total);
+    double measurement_secs = total_secs / count;
 
     switch (g_format) {
-    case BenchTable:
+    case FormatHuman:
         // Pretty print the measurement
-        double total_secs = ecs_time_to_double(b->total);
-        double v = total_secs / count;
-        if (g_detailed) {
-            printf("| %-37s | %s%10.3f%s%s | %12" PRIu64 " | %14" PRIu64 " | %12" PRIu32 " |\n", 
-                label, 
-                COLOR(v), NUM(v), SYM(v), ECS_NORMAL,
-                total_nanos,
-                count,
-                b->samples - 1);
-        } else {
-            printf("| %-37s | %s%10.3f%s%s |\n", 
-                label, 
-                COLOR(v), NUM(v), SYM(v), ECS_NORMAL);
-        }
+        printf("| %-37s | %s%10.3f%s%s |\n", 
+            label, 
+            COLOR(measurement_secs), NUM(measurement_secs), SYM(measurement_secs), ECS_NORMAL);
         break;
-    case BenchCSV:
-        if (g_detailed) {
-            double v = (double)total_nanos / count;
-            printf("%s,%f,%" PRIu64 ",%" PRIu64 ",%" PRIu32 "\n", label, v, total_nanos, count, b->samples - 1);
-        } else {
-            double v = (double)total_nanos / count;
-            printf("%s,%f\n", label, v);
-        }
+    case FormatHuman | FormatDetailed:
+        printf("| %-37s | %s%10.3f%s%s | %12" PRIu64 " | %14" PRIu64 " | %12" PRIu32 " |\n", 
+            label, 
+            COLOR(measurement_secs), NUM(measurement_secs), SYM(measurement_secs), ECS_NORMAL,
+            total_nanos,
+            count,
+            samples);
+        break;
+    case FormatCSV:
+        printf("%s,%f\n", label, measurement_nanos);
+        break;
+    case FormatCSV | FormatDetailed:
+        printf("%s,%f,%" PRIu64 ",%" PRIu64 ",%" PRIu32 "\n", 
+            label, measurement_nanos, total_nanos, count, samples);
         break;
     }
 }
@@ -253,8 +260,7 @@ void baseline(void) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        result);
+    do_not_optimize(result);
 }
 
 void world_mini_fini(void) {
@@ -1390,8 +1396,7 @@ void filter_simple_iter(const char *label, int32_t query_count, bool component, 
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize((uint32_t)result);
 
     ecs_filter_fini(q);
     ecs_fini(world);
@@ -1430,8 +1435,7 @@ void filter_iter(const char *label, int32_t id_count, bool component, int32_t qu
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1480,8 +1484,7 @@ void filter_iter_up(const char *label, bool component, bool query_self) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1533,8 +1536,7 @@ void filter_iter_up_w_mut(const char *label, bool component, bool query_self) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1592,8 +1594,7 @@ void rule_simple_iter(const char *label, int32_t query_count, bool component, ec
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize((uint32_t)result);
 
     ecs_rule_fini(q);
     ecs_fini(world);
@@ -1632,8 +1633,7 @@ void rule_iter(const char *label, int32_t id_count, bool component, int32_t quer
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_rule_fini(f);
     ecs_fini(world);
@@ -1676,8 +1676,7 @@ void rule_inheritance(const char *label, int32_t depth, int32_t id_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_rule_fini(f);
     ecs_fini(world);
@@ -1742,8 +1741,7 @@ void query_iter(const char *label, int32_t table_count, int32_t term_count, bool
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize((uint32_t)result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1787,8 +1785,7 @@ void query_iter_empty(const char *label, int32_t table_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize((uint32_t)result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1826,8 +1823,7 @@ void query_iter_rnd(const char *label, int32_t id_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize((uint32_t)result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1861,8 +1857,7 @@ void query_count(const char *label, int32_t table_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize((uint32_t)result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1872,11 +1867,14 @@ void query_count(const char *label, int32_t table_count) {
 int main(int argc, char *argv[]) {
     ecs_os_set_api_defaults(); // Required for timers to work
 
-    for (int i = 0; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--csv")) {
-            g_format = BenchCSV;
+            g_format |= FormatCSV;
         } else if (!strcmp(argv[i], "--detailed")) {
-            g_detailed = true;
+            g_format |= FormatDetailed;
+        } else {
+            fprintf(stderr, "Invalid argument '%s'\n", argv[i]);
+            exit(1);
         }
     }
 
