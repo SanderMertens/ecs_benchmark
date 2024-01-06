@@ -8,12 +8,21 @@
 #define PRETTY_TIME_FMT
 
 typedef struct bench_t {
-    const char *lbl;
+    // Benchmark state
+    // The number of times a benchmark is run before taking a measurement.
+    uint32_t interval;
+    // The total number of intervals that have been run.
+    uint32_t intervals;
+    // The time at which the benchmark was started.
     ecs_time_t t;
+    // The time it took to run the benchmark.
     double dt;
-    int32_t interval;
-    int32_t intervals;
-    int32_t count;
+
+    // Benchmark settings
+    // The label of the benchmark.
+    const char *lbl;
+    // The number of times the operation is run per interval.
+    uint32_t count;
 } bench_t;
 
 #define THOUSAND (1000.0)
