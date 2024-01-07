@@ -3,14 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// How many times a benchmark is run before recording a measurement.
-#define MEASURE_INTERVAL (50)
 // The minimum amount of time a benchmark must have run for.
-#define MEASURE_TIME (1.0)
+#define MEASURE_TIME (0.5)
 // The number of times to run the benchmark before starting to record.
-#define WARMUP_INTERVAL (100)
-
-#define PRETTY_TIME_FMT
+#define WARMUP_INTERVAL (200)
+// The attempted number of samples to record.
+#define DESIRED_SAMPLES (5)
 
 typedef enum {
     FormatDetailed       = 0b01,
@@ -41,6 +39,8 @@ typedef struct bench_t {
     const char *lbl;
     // The number of times the operation is run per interval.
     uint32_t count;
+    // The number of intervals to run the benchmark for before recording a measurement.
+    uint32_t sample_interval;
 } bench_t;
 
 #define THOUSAND (1000.0)
@@ -121,14 +121,14 @@ void header_print(void) {
         printf("|---------------------------------------|--------------|\n");
         break;
     case FormatHuman | FormatDetailed:
-        printf("| Benchmark                             | Measurement  | Total (ns)   | Count          | Samples      |\n");
-        printf("|---------------------------------------|--------------|--------------|----------------|--------------|\n");
+        printf("| Benchmark                             | Measurement  | Total (ns)   | Count          | Samples      | Interval     |\n");
+        printf("|---------------------------------------|--------------|--------------|----------------|--------------|--------------|\n");
         break;
     case FormatCSV:
         printf("Benchmark,Measurement (ns)\n");
         break;
     case FormatCSV | FormatDetailed:
-        printf("Benchmark,Measurement (ns),Total (ns),Count,Samples\n");
+        printf("Benchmark,Measurement (ns),Total (ns),Count,Samples,Interval\n");
         break;
     }
 }
@@ -139,6 +139,7 @@ bench_t bench_begin(const char *lbl, int32_t count) {
     b.interval = WARMUP_INTERVAL;
     b.samples = 0;
     b.count = count;
+    ecs_os_get_time(&b.start);
     return b;
 }
 
@@ -179,8 +180,16 @@ bool bench_next(bench_t *b) {
             if (ecs_time_to_nanos(b->total) > (uint64_t)(MEASURE_TIME * BILLION)) {
                 return false;
             }
+        } else {
+            // Use warmup to calculate an appropriate interval for this benchmark
+            uint64_t nanos = ecs_time_to_nanos(ecs_time_sub(b->stop, b->start));
+            b->sample_interval = (uint32_t)((MEASURE_TIME * BILLION / DESIRED_SAMPLES) / (nanos / WARMUP_INTERVAL));
+            if (!b->sample_interval) {
+                b->sample_interval = 1;
+            }
         }
-        b->interval = MEASURE_INTERVAL;
+
+        b->interval = b->sample_interval;
 
         // Record the start time as late as possible (to reduce overhead)
         ecs_os_get_time(&b->start);
@@ -192,7 +201,7 @@ void bench_end(bench_t *b) {
     const char* label = b->lbl;
     // Note: -1 because we don't count the warmup
     uint32_t samples = b->samples - 1;
-    uint64_t count = (uint64_t)samples * (uint64_t)MEASURE_INTERVAL * (uint64_t)b->count;
+    uint64_t count = (uint64_t)samples * b->sample_interval * b->count;
 
     uint64_t total_nanos = ecs_time_to_nanos(b->total);
     double measurement_nanos = (double)total_nanos / count;
@@ -208,19 +217,20 @@ void bench_end(bench_t *b) {
             COLOR(measurement_secs), NUM(measurement_secs), SYM(measurement_secs), ECS_NORMAL);
         break;
     case FormatHuman | FormatDetailed:
-        printf("| %-37s | %s%10.3f%s%s | %12" PRIu64 " | %14" PRIu64 " | %12" PRIu32 " |\n", 
+        printf("| %-37s | %s%10.3f%s%s | %12" PRIu64 " | %14" PRIu64 " | %12" PRIu32 " | %12" PRIu32 " |\n", 
             label, 
             COLOR(measurement_secs), NUM(measurement_secs), SYM(measurement_secs), ECS_NORMAL,
             total_nanos,
             count,
-            samples);
+            samples,
+            b->sample_interval);
         break;
     case FormatCSV:
         printf("%s,%f\n", label, measurement_nanos);
         break;
     case FormatCSV | FormatDetailed:
-        printf("%s,%f,%" PRIu64 ",%" PRIu64 ",%" PRIu32 "\n", 
-            label, measurement_nanos, total_nanos, count, samples);
+        printf("%s,%f,%" PRIu64 ",%" PRIu64 ",%" PRIu32 ",%" PRIu32 "\n", 
+            label, measurement_nanos, total_nanos, count, samples, b->sample_interval);
         break;
     }
 }
