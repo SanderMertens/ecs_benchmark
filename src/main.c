@@ -154,14 +154,14 @@ ecs_time_t ecs_time_add(
     if (result.nanosec >= 1000000000) {
         uint32_t s = result.nanosec / 1000000000;
         result.nanosec -= s * 1000000000;
-        result.sec = s;
+        result.sec += s;
     }
 
     return result;
 }
 
 uint64_t ecs_time_to_nanos(ecs_time_t t) {
-    return t.sec * 1000000000 + t.nanosec;
+    return (uint64_t)t.sec * (uint64_t)1000000000 + (uint64_t)t.nanosec;
 }
 
 bool bench_next(bench_t *b) {
