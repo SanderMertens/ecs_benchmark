@@ -165,7 +165,7 @@ bool bench_next(bench_t *b) {
 }
 
 void bench_end(bench_t *b) {
-    bench_print(b->lbl, b->dt / ((b->intervals - WARMUP_INTERVALS) * MEASURE_INTERVAL * b->count));
+    bench_print(b->lbl, b->dt / (((uint64_t)b->intervals - 1) * MEASURE_INTERVAL * (uint64_t)b->count));
 }
 
 /* -- benchmark code -- */
