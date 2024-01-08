@@ -205,10 +205,15 @@ ecs_entity_t* create_ids(ecs_world_t *world, int32_t count, ecs_size_t size, boo
 }
 
 void baseline(void) {
+    uint32_t result = 0;
+    
     bench_t b = bench_begin("baseline", 1);
     do {
+        result++;
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 }
 
 void world_mini_fini(void) {
@@ -377,14 +382,18 @@ void has_empty_entity(void) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
     ecs_entity_t *ids = create_ids(world, 1, 0, true);
+
+    uint32_t result = 0;
     
     bench_t b = bench_begin("has_empty_entity", ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_has_id(world, entities[e], ids[0]);
+            result += ecs_has_id(world, entities[e], ids[0]);
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -400,13 +409,17 @@ void has_id_not_found(void) {
         ecs_add_id(world, entities[e], ids[0]);
     }
 
+    uint32_t result = 0;
+
     bench_t b = bench_begin("has_id_not_found", ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_has_id(world, entities[e], ids[1]);
+            result += ecs_has_id(world, entities[e], ids[1]);
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -424,15 +437,19 @@ void has_id(const char *label, int32_t id_count) {
         }
     }
 
+    uint32_t result = 0;
+
     bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < id_count; i ++) {
-                ecs_has_id(world, entities[e], ids[i]);
+                result += ecs_has_id(world, entities[e], ids[i]);
             }
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -443,14 +460,18 @@ void get_empty_entity(void) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
     ecs_entity_t *ids = create_ids(world, 1, 4, true);
+
+    uintptr_t result = 0;
     
     bench_t b = bench_begin("get_empty_entity", ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_get_id(world, entities[e], ids[0]);
+            result += (uintptr_t)ecs_get_id(world, entities[e], ids[0]);
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -465,14 +486,18 @@ void get_id_not_found(void) {
     for (int e = 0; e < ENTITY_COUNT; e ++) {
         ecs_add_id(world, entities[e], ids[0]);
     }
+
+    uintptr_t result = 0;
     
     bench_t b = bench_begin("get_id_not_found", ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_get_id(world, entities[e], ids[1]);
+            result += (uintptr_t)ecs_get_id(world, entities[e], ids[1]);
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -490,15 +515,19 @@ void get_id(const char *label, int32_t id_count) {
         }
     }
 
+    uintptr_t result = 0;
+
     bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < id_count; i ++) {
-                ecs_get_id(world, entities[e], ids[i]);
+                result += (uintptr_t)ecs_get_id(world, entities[e], ids[i]);
             }
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -516,15 +545,19 @@ void get_mut_id(const char *label, int32_t id_count) {
         }
     }
 
+    uintptr_t result = 0;
+
     bench_t b = bench_begin(label, ENTITY_COUNT * id_count);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < id_count; i ++) {
-                ecs_get_mut_id(world, entities[e], ids[i]);
+                result += (uintptr_t)ecs_get_mut_id(world, entities[e], ids[i]);
             }
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -536,11 +569,13 @@ void get_mut_remove(const char* label, int32_t id_count) {
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false);
     ecs_entity_t *ids = create_ids(world, id_count, 4, true);
 
+    uintptr_t result = 0;
+
     bench_t b = bench_begin(label, 2 * ENTITY_COUNT * id_count);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < id_count; i ++) {
-                ecs_get_mut_id(world, entities[e], ids[i]);
+                result += (uintptr_t)ecs_get_mut_id(world, entities[e], ids[i]);
             }
             for (int i = 0; i < id_count; i ++) {
                 ecs_remove_id(world, entities[e], ids[i]);
@@ -548,6 +583,8 @@ void get_mut_remove(const char* label, int32_t id_count) {
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -594,15 +631,19 @@ void get_pair(const char *label, int32_t target_count) {
         }
     }
 
+    uintptr_t result = 0;
+
     bench_t b = bench_begin(label, ENTITY_COUNT * target_count);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < target_count; i ++) {
-                ecs_get_id(world, entities[e], ecs_pair(rel[0], tgt[i]));
+                result += (uintptr_t)ecs_get_id(world, entities[e], ecs_pair(rel[0], tgt[i]));
             }
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(rel);
@@ -623,13 +664,17 @@ void get_inherited(const char *label, int32_t depth) {
         ecs_add_pair(world, entities[e], EcsIsA, base);
     }
 
+    uintptr_t result = 0;
+
     bench_t b = bench_begin(label, ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_get_id(world, entities[e], id);
+            result += (uintptr_t)ecs_get_id(world, entities[e], id);
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
 }
@@ -643,13 +688,18 @@ void ref_init(void) {
         ecs_add_id(world, entities[e], ids[0]);
     }
 
+    uintptr_t result = 0;
+
     bench_t b = bench_begin("ref_init", ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_ref_init_id(world, entities[e], ids[0]);
+            ecs_ref_t ref = ecs_ref_init_id(world, entities[e], ids[0]);
+            result += (uintptr_t)ref.tr;
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
@@ -666,14 +716,18 @@ void ref_get(void) {
         ecs_add_id(world, entities[e], ids[0]);
         refs[e] = ecs_ref_init_id(world, entities[e], ids[0]);
     }
+
+    uintptr_t result = 0;
     
     bench_t b = bench_begin("ref_get", ENTITY_COUNT);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
-            ecs_ref_get_id(world, &refs[e], ids[0]);
+            result += (uintptr_t)ecs_ref_get_id(world, &refs[e], ids[0]);
         }
     } while (bench_next(&b));
     bench_end(&b);
+
+    do_not_optimize(result);
 
     ecs_fini(world);
     ecs_os_free(entities);
