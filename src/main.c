@@ -2,8 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WARMUP_INTERVALS (5)
+// The number of times to run the benchmark before starting to record.
+#define WARMUP_INTERVAL (200)
+// The frequency at which to take a measurement.
 #define MEASURE_INTERVAL (50)
+// The minimum amount of time a benchmark must have run for.
 #define MEASURE_TIME (0.5)
 
 #define PRETTY_TIME_FMT
@@ -133,7 +136,7 @@ void bench_print(const char *label, float v) {
 bench_t bench_begin(const char *lbl, int32_t count) {
     bench_t b = {0};
     b.lbl = lbl;
-    b.interval = MEASURE_INTERVAL;
+    b.interval = WARMUP_INTERVAL;
     b.intervals = 0;
     b.count = count;
     return b;
@@ -149,14 +152,15 @@ double time_measure(
 
 bool bench_next(bench_t *b) {
     if (!--b->interval) {
-        b->intervals ++;
-        if (b->intervals > WARMUP_INTERVALS) {
+        // `intervals == 0` means we are doing warmup
+        // When `intervals > 0` take a measurement
+        if (b->intervals++) {
             double dt = time_measure(&b->t);
             if (dt > MEASURE_TIME) {
                 b->dt = dt;
                 return false;
             }
-        } else if (b->intervals == WARMUP_INTERVALS) {
+        } else {
             ecs_os_get_time(&b->t);
         }
         b->interval = MEASURE_INTERVAL;
