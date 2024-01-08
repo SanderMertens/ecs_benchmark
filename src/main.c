@@ -1,4 +1,5 @@
 #include <ecs_benchmark.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -110,6 +111,10 @@ char* bench_asprintf(
     char *result = bench_vasprintf(fmt, args);
     va_end(args);
     return result;
+}
+
+void do_not_optimize(uint64_t v) {
+    fprintf(stderr, "result = %" PRId64 "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", v);
 }
 
 #ifdef PRETTY_TIME_FMT
@@ -1339,8 +1344,7 @@ void filter_simple_iter(const char *label, int32_t query_count, bool component, 
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize(result);
 
     ecs_filter_fini(q);
     ecs_fini(world);
@@ -1379,8 +1383,7 @@ void filter_iter(const char *label, int32_t id_count, bool component, int32_t qu
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1429,8 +1432,7 @@ void filter_iter_up(const char *label, bool component, bool query_self) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1482,8 +1484,7 @@ void filter_iter_up_w_mut(const char *label, bool component, bool query_self) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_filter_fini(f);
     ecs_fini(world);
@@ -1541,8 +1542,7 @@ void rule_simple_iter(const char *label, int32_t query_count, bool component, ec
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize(result);
 
     ecs_rule_fini(q);
     ecs_fini(world);
@@ -1581,8 +1581,7 @@ void rule_iter(const char *label, int32_t id_count, bool component, int32_t quer
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_rule_fini(f);
     ecs_fini(world);
@@ -1625,8 +1624,7 @@ void rule_inheritance(const char *label, int32_t depth, int32_t id_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b",
-        result);
+    do_not_optimize(result);
 
     ecs_rule_fini(f);
     ecs_fini(world);
@@ -1691,8 +1689,7 @@ void query_iter(const char *label, int32_t table_count, int32_t term_count, bool
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize(result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1736,8 +1733,7 @@ void query_iter_empty(const char *label, int32_t table_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize(result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1775,8 +1771,7 @@ void query_iter_rnd(const char *label, int32_t id_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize(result);
 
     ecs_query_fini(q);
     ecs_fini(world);
@@ -1810,8 +1805,7 @@ void query_count(const char *label, int32_t table_count) {
     } while (bench_next(&b));
     bench_end(&b);
 
-    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
-        (uint32_t)result);
+    do_not_optimize(result);
 
     ecs_query_fini(q);
     ecs_fini(world);
