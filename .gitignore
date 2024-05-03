@@ -4,3 +4,4 @@
 bin
 deps/
 .vs/
+vc140.pdb
