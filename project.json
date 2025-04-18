@@ -6,5 +6,8 @@
         "description": "ECS benchmark comparison",
         "use": ["flecs"],
         "standalone": true
+    },
+    "lang.c": {
+        "cflags": ["-march=native"]
     }
 }
