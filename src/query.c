@@ -89,7 +89,7 @@ void uncach_query_iter(
 
 void query_iter(
     const char *label, ecs_query_cache_kind_t cache_kind, int32_t id_count, int32_t term_count, 
-    bool component, bool sparse, bool fragment, bool singleton) 
+    bool component, bool sparse, bool fragment) 
 {
     #if FLECS_VERSION_NUMBER < 40000
         if (sparse) {
@@ -130,15 +130,6 @@ void query_iter(
         desc.query_terms[i].id = ids[i];
         desc.query_terms[i].term_trav_flags = EcsSelf;
         desc.query_terms[i].inout = EcsIn;
-    }
-
-    if (singleton) {
-        ecs_entity_t singleton = ecs_new(world);
-        ecs_set(world, singleton, EcsComponent, {4, 4});
-        ecs_add_id(world, singleton, singleton);
-        desc.query_terms[term_count].id = singleton;
-        desc.query_terms[term_count].src.id = singleton | EcsIsEntity;
-        desc.query_terms[term_count].inout = EcsIn;
     }
 
     // Create 100 other queries to increase cache element fragmentation
@@ -305,19 +296,19 @@ void query_iter_up(const char *label, ecs_query_cache_kind_t cache_kind, bool co
         ecs_add_id(world, e, ids[1]);
     }
 
-    ecs_query_desc_t desc = {0};
-    desc.query_terms[0].id = ids[0];
-    desc.query_terms[0].term_trav_flags = EcsUp;
-    desc.query_terms[0].term_trav = EcsChildOf;
+    ecs_filter_desc_t desc = {0};
+    desc.terms[0].id = ids[0];
+    desc.terms[0].term_trav_flags = EcsUp;
+    desc.terms[0].term_trav = EcsChildOf;
     if (query_self) {
-        desc.query_terms[1].id = ids[1];
+        desc.terms[1].id = ids[1];
     }
 
     #if FLECS_VERSION_NUMBER >= 40000
     desc.cache_kind = cache_kind;
     #endif
 
-    ecs_query_t *f = ecs_query_init(world, &desc);
+    ecs_filter_t *f = ecs_filter_init(world, &desc);
     int32_t result = 0;
 
     bench_t b = bench_begin(label, 1);
@@ -673,39 +664,45 @@ void rematch_tables(const char *label, int32_t rematch_count, int32_t total_coun
 void query_w_vars(const char *label, ecs_query_cache_kind_t cache_kind) {
     ecs_world_t *world = ecs_mini();
 
-    ECS_TAG(world, SpaceShip);
-    ECS_TAG(world, DockedTo);
-    ECS_TAG(world, Planet);
-    ECS_TAG(world, Moon);
+    ecs_entity_t SpaceShip = ecs_new(world);
+    ecs_set_name(world, SpaceShip, "SpaceShip");
+    ecs_entity_t DockedTo = ecs_new(world);
+    ecs_set_name(world, DockedTo, "DockedTo");
+    ecs_entity_t Planet = ecs_new(world);
+    ecs_set_name(world, Planet, "Planet");
+    ecs_entity_t Moon = ecs_new(world);
+    ecs_set_name(world, Moon, "Moon");
 
     for (int p = 0; p < ENTITY_COUNT; p ++) {
-        ecs_entity_t planet = ecs_new_w(world, Planet);
+        ecs_entity_t planet = ecs_new_w_id(world, Planet);
 
         for (int i = 0; i < 10; i ++) {
-            ecs_entity_t spaceship = ecs_new_w(world, SpaceShip);
+            ecs_entity_t spaceship = ecs_new_w_id(world, SpaceShip);
             ecs_add_pair(world, spaceship, DockedTo, planet);
             ecs_add_id(world, spaceship, ecs_new(world));
         }
     }
 
     for (int p = 0; p < ENTITY_COUNT; p ++) {
-        ecs_entity_t moon = ecs_new_w(world, Moon);
+        ecs_entity_t moon = ecs_new_w_id(world, Moon);
 
         for (int i = 0; i < 10; i ++) {
-            ecs_entity_t spaceship = ecs_new_w(world, SpaceShip);
+            ecs_entity_t spaceship = ecs_new_w_id(world, SpaceShip);
             ecs_add_pair(world, spaceship, DockedTo, moon);
             ecs_add_id(world, spaceship, ecs_new(world));
         }
     }
 
     for (int p = 0; p < ENTITY_COUNT; p ++) {
-        ecs_entity_t spaceship = ecs_new_w(world, SpaceShip);
+        ecs_entity_t spaceship = ecs_new_w_id(world, SpaceShip);
         ecs_add_id(world, spaceship, ecs_new(world));
     }
 
     ecs_rule_t *q = ecs_rule(world, {
         .expr = "SpaceShip, (DockedTo, $planet), Planet($planet)",
+    #if FLECS_VERSION_NUMBER >= 40000
         .cache_kind = cache_kind
+    #endif
     });
 
     uint64_t result = 0;
@@ -727,6 +724,240 @@ void query_w_vars(const char *label, ecs_query_cache_kind_t cache_kind) {
     ecs_rule_fini(q);
 
     ecs_fini(world);
+}
+
+#if FLECS_VERSION_NUMBER < 40000
+void uncach_query_w_singleton(const char *label, ecs_world_t *world, ecs_entity_t *ids) {
+    ecs_filter_desc_t desc = {0};
+
+    for (int i = 0; i < 4; i ++) {
+        desc.terms[i].id = ids[i];
+        desc.terms[i].term_trav_flags = EcsSelf;
+        desc.terms[i].inout = EcsIn;
+    }
+
+    desc.terms[4].id = ids[4];
+    desc.terms[4].src.id = ids[4];
+    desc.terms[4].inout = EcsIn;
+
+    ecs_filter_t *q = ecs_filter_init(world, &desc);
+
+    uint64_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_filter_iter(world, q);
+        while (ecs_filter_next(&it)) {
+            for (int i = 0; i < 5; i ++) {
+                int32_t *f = ecs_field_w_size(&it, 4, i);
+                result += *f;
+            }
+
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_filter_fini(q);
+
+    ecs_os_free(ids);
+
+    ecs_fini(world);
+}
+#endif
+
+void query_w_singleton(const char *label, ecs_query_cache_kind_t cache_kind) {
+    ecs_world_t *world = ecs_mini();
+
+    ecs_entity_t *ids = create_ids(world, 5, 4, true, false, true);
+
+    ecs_add_id(world, ids[4], ids[4]);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new(world);
+        for (int c = 0; c < 4; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+    }
+
+    #if FLECS_VERSION_NUMBER < 40000
+        if (cache_kind == EcsQueryCacheDefault) {
+            uncach_query_w_singleton(label, world, ids);
+            return;
+        }
+    #endif
+
+    ecs_query_desc_t desc = {0};
+
+    for (int i = 0; i < 4; i ++) {
+        desc.query_terms[i].id = ids[i];
+        desc.query_terms[i].term_trav_flags = EcsSelf;
+        desc.query_terms[i].inout = EcsIn;
+    }
+
+    desc.query_terms[4].id = ids[4];
+    desc.query_terms[4].src.id = ids[4];
+    desc.query_terms[4].inout = EcsIn;
+
+    #if FLECS_VERSION_NUMBER >= 40000
+    desc.cache_kind = cache_kind;
+    #endif
+
+    ecs_query_t *q = ecs_query_init(world, &desc);
+
+    uint64_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_query_iter(world, q);
+        while (ecs_query_next(&it)) {
+            for (int i = 0; i < 5; i ++) {
+                int32_t *f = ecs_field_w_size(&it, 4, i);
+                result += *f;
+            }
+
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_query_fini(q);
+
+    ecs_os_free(ids);
+
+    ecs_fini(world);
+}
+
+#if FLECS_VERSION_NUMBER < 40000
+void uncach_query_w_not(const char *label, ecs_world_t *world, ecs_entity_t rel, ecs_entity_t *ids) {
+    ecs_filter_desc_t desc = {0};
+
+    for (int i = 0; i < 4; i ++) {
+        desc.terms[i].id = ids[i];
+        desc.terms[i].term_trav_flags = EcsSelf;
+        desc.terms[i].inout = EcsIn;
+    }
+
+    desc.terms[4].id = ids[4];
+    desc.terms[4].oper = EcsNot;
+    desc.terms[5].id = ecs_pair(rel, EcsWildcard);
+    desc.terms[6].oper = EcsNot;
+
+    ecs_filter_t *q = ecs_filter_init(world, &desc);
+
+    uint64_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_filter_iter(world, q);
+        while (ecs_filter_next(&it)) {
+            for (int i = 0; i < 4; i ++) {
+                int32_t *f = ecs_field_w_size(&it, 4, i);
+                result += *f;
+            }
+
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_filter_fini(q);
+
+    ecs_fini(world);
+
+    ecs_os_free(ids);
+}
+#endif
+
+void query_w_not(const char *label, ecs_query_cache_kind_t cache_kind) {
+    ecs_world_t *world = ecs_mini();
+
+    ecs_entity_t *ids = create_ids(world, 6, 4, true, false, true);
+    ecs_entity_t rel = ecs_new(world);
+    ecs_entity_t tgt = ecs_new(world);
+
+    for (int i = 0; i < QUERY_ENTITY_COUNT; i ++) {
+        ecs_entity_t e = ecs_new(world);
+        for (int c = 0; c < 6; c ++) {
+            if (flip_coin()) {
+                ecs_add_id(world, e, ids[c]);
+            }
+        }
+
+        if (flip_coin()) {
+            ecs_add_pair(world, e, rel, tgt);
+        }
+    }
+
+    #if FLECS_VERSION_NUMBER < 40000
+        if (cache_kind == EcsQueryCacheDefault) {
+            uncach_query_w_not(label, world, rel, ids);
+            return;
+        }
+    #endif
+
+    ecs_query_desc_t desc = {0};
+
+    for (int i = 0; i < 4; i ++) {
+        desc.query_terms[i].id = ids[i];
+        desc.query_terms[i].term_trav_flags = EcsSelf;
+        desc.query_terms[i].inout = EcsIn;
+    }
+
+    desc.query_terms[4].id = ids[4];
+    desc.query_terms[4].oper = EcsNot;
+    desc.query_terms[5].id = ecs_pair(rel, EcsWildcard);
+    desc.query_terms[5].oper = EcsNot;
+
+    #if FLECS_VERSION_NUMBER >= 40000
+    desc.cache_kind = cache_kind;
+    #endif
+
+    ecs_query_t *q = ecs_query_init(world, &desc);
+
+    uint64_t result = 0;
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_iter_t it = ecs_query_iter(world, q);
+        while (ecs_query_next(&it)) {
+            for (int i = 0; i < 4; i ++) {
+                int32_t *f = ecs_field_w_size(&it, 4, i);
+                result += *f;
+            }
+
+            for (int i = 0; i < it.count; i ++) {
+                result += it.entities[i];
+            }
+        }
+    } while (bench_next(&b));
+    bench_end(&b);
+
+    printf("result = %u\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", 
+        (uint32_t)result);
+
+    ecs_query_fini(q);
+
+    ecs_fini(world);
+
+    ecs_os_free(ids);
 }
 
 void query_w_cantoggle_no_disabled(const char *label, int32_t term_count) {
@@ -891,7 +1122,6 @@ void query_w_cantoggle_alt_disabled(const char *label, int32_t term_count) {
     ecs_fini(world);
 }
 
-
 void query_tests() {
     // Uncached query init fini
     uncach_init_fini("uncach_init_fini_1_ids", 1);
@@ -900,39 +1130,42 @@ void query_tests() {
     uncach_init_fini("uncach_init_fini_16_ids", 16);
 
     // Uncached query iter
-    query_iter("uncach_8_tags_1_term",           EcsQueryCacheDefault, 8,  1, false, false, true, false);
-    query_iter("uncach_8_tags_4_terms",          EcsQueryCacheDefault, 8,  4, false, false, true, false);
-    query_iter("uncach_16_tags_1_term",          EcsQueryCacheDefault, 16, 1, false, false, true, false);
-    query_iter("uncach_16_tags_4_terms",         EcsQueryCacheDefault, 16, 4, false, false, true, false);
-    query_iter("uncach_16_tags_8_terms",         EcsQueryCacheDefault, 16, 8, false, false, true, false);
-    query_iter("uncach_8_comps_1_term",          EcsQueryCacheDefault, 8,  1, true,  false, true, false);
-    query_iter("uncach_8_comps_4_terms",         EcsQueryCacheDefault, 8,  4, true,  false, true, false);
-    query_iter("uncach_16_comps_1_term",         EcsQueryCacheDefault, 16, 1, true,  false, true, false);
-    query_iter("uncach_16_comps_4_terms",        EcsQueryCacheDefault, 16, 4, true,  false, true, false);
-    query_iter("uncach_16_comps_8_terms",        EcsQueryCacheDefault, 16, 8, true,  false, true, false);
+    query_iter("uncach_6_tags_1_term",           EcsQueryCacheDefault, 6,  1, false, false, true);
+    query_iter("uncach_6_tags_4_terms",          EcsQueryCacheDefault, 6,  4, false, false, true);
+    query_iter("uncach_10_tags_1_term",          EcsQueryCacheDefault, 10, 1, false, false, true);
+    query_iter("uncach_10_tags_4_terms",         EcsQueryCacheDefault, 10, 4, false, false, true);
+    query_iter("uncach_10_tags_8_terms",         EcsQueryCacheDefault, 10, 8, false, false, true);
+    query_iter("uncach_6_comps_1_term",          EcsQueryCacheDefault, 6,  1, true,  false, true);
+    query_iter("uncach_6_comps_4_terms",         EcsQueryCacheDefault, 6,  4, true,  false, true);
+    query_iter("uncach_10_comps_1_term",         EcsQueryCacheDefault, 10, 1, true,  false, true);
+    query_iter("uncach_10_comps_4_terms",        EcsQueryCacheDefault, 10, 4, true,  false, true);
+    query_iter("uncach_10_comps_8_terms",        EcsQueryCacheDefault, 10, 8, true,  false, true);
 
-    query_iter("uncach_16_sparse_tags_4_terms",  EcsQueryCacheDefault, 16, 4, false, true, true, false);
-    query_iter("uncach_16_sparse_comps_4_terms", EcsQueryCacheDefault, 16, 4, true,  true, true, false);
-    query_iter("uncach_16_nofrag_tags_4_terms",  EcsQueryCacheDefault, 16, 4, false, true, false, false);
-    query_iter("uncach_16_nofrag_comps_4_terms", EcsQueryCacheDefault, 16, 4, true,  true, false, false);
-
-    // Uncached with singleton
-    query_iter("cached_16_tags_4_terms_singleton", EcsQueryCacheDefault, 16, 4, false, false, true, true);
+    query_iter("uncach_10_sparse_tags_4_terms",  EcsQueryCacheDefault, 10, 4, false, true, true);
+    query_iter("uncach_10_sparse_comps_4_terms", EcsQueryCacheDefault, 10, 4, true,  true, true);
+    query_iter("uncach_10_nofrag_tags_4_terms",  EcsQueryCacheDefault, 10, 4, false, true, false);
+    query_iter("uncach_10_nofrag_comps_4_terms", EcsQueryCacheDefault, 10, 4, true,  true, false);
 
     // Uncached empty iter
     query_iter_empty("uncach_255_empty_1_fill", 256, EcsQueryCacheDefault);
     query_iter_empty("uncach_1023_empty_1_fill", 1024, EcsQueryCacheDefault);
 
     // Uncached query iter up
-    query_iter_up("uncach_up_8_tags", EcsQueryCacheNone, false, false);
-    query_iter_up("uncach_up_8_tags_w_self", EcsQueryCacheNone, false, true);
+    query_iter_up("uncach_up_tags", EcsQueryCacheDefault, false, false);
+    query_iter_up("uncach_up_tags_w_self", EcsQueryCacheDefault, false, true);
 
     // Uncached query iter up w mut
     uncach_iter_up_w_mut("uncach_up_w_mut_8_tags", false, false);
     uncach_iter_up_w_mut("uncach_up_w_mut_8_tags_w_self", false, true);
 
     // Uncached query with variables
-    query_w_vars("uncach_w_vars", EcsQueryCacheAuto);
+    query_w_vars("uncach_w_vars", EcsQueryCacheDefault);
+
+    // Uncached query with singleton
+    query_w_singleton("uncach_w_singleton", EcsQueryCacheDefault);
+
+    // Uncached query with not
+    query_w_not("uncach_w_not", EcsQueryCacheDefault);
 
     // Uncached query inheritance
     query_inheritance("uncach_inherit_depth_1_tables_1", 1, 0);
@@ -951,38 +1184,47 @@ void query_tests() {
     query_init_fini("cached_init_fini_16_ids", 16);
 
     // Cached query iter
-    query_iter("cached_6_tags_1_term", EcsQueryCacheAuto, 6, 1, false, false, true, false);
-    query_iter("cached_6_tags_4_terms", EcsQueryCacheAuto, 6, 4, false, false, true, false);
-    query_iter("cached_8_tags_1_term", EcsQueryCacheAuto, 8, 1, false, false, true, false);
-    query_iter("cached_8_tags_4_terms", EcsQueryCacheAuto, 8, 4, false, false, true, false);
-    query_iter("cached_10_tags_1_term", EcsQueryCacheAuto, 10, 1, false, false, true, false);
-    query_iter("cached_10_tags_4_terms", EcsQueryCacheAuto, 10, 4, false, false, true, false);
-    query_iter("cached_10_tags_8_terms", EcsQueryCacheAuto, 10, 8, false, false, true, false);
+    query_iter("cached_6_tags_1_term", EcsQueryCacheAuto, 6, 1, false, false, true);
+    query_iter("cached_6_tags_4_terms", EcsQueryCacheAuto, 6, 4, false, false, true);
+    query_iter("cached_8_tags_1_term", EcsQueryCacheAuto, 8, 1, false, false, true);
+    query_iter("cached_8_tags_4_terms", EcsQueryCacheAuto, 8, 4, false, false, true);
+    query_iter("cached_10_tags_1_term", EcsQueryCacheAuto, 10, 1, false, false, true);
+    query_iter("cached_10_tags_4_terms", EcsQueryCacheAuto, 10, 4, false, false, true);
+    query_iter("cached_10_tags_8_terms", EcsQueryCacheAuto, 10, 8, false, false, true);
+    query_iter("cached_16_tags_1_term", EcsQueryCacheAuto, 16, 1, false, false, true);
+    query_iter("cached_16_tags_4_terms", EcsQueryCacheAuto, 16, 4, false, false, true);
+    query_iter("cached_16_tags_8_terms", EcsQueryCacheAuto, 16, 8, false, false, true);
 
-    query_iter("cached_6_components_1_term", EcsQueryCacheAuto, 6, 1, true, false, true, false);
-    query_iter("cached_6_components_4_terms", EcsQueryCacheAuto, 6, 4, true, false, true, false);
-    query_iter("cached_8_components_1_term", EcsQueryCacheAuto, 8, 1, true, false, true, false);
-    query_iter("cached_8_components_4_terms", EcsQueryCacheAuto, 8, 4, true, false, true, false);
-    query_iter("cached_10_components_1_term", EcsQueryCacheAuto, 10, 1, true, false, true, false);
-    query_iter("cached_10_components_4_terms", EcsQueryCacheAuto, 10, 4, true, false, true, false);
-    query_iter("cached_10_components_8_terms", EcsQueryCacheAuto, 10, 8, true, false, true, false);
+    query_iter("cached_6_components_1_term", EcsQueryCacheAuto, 6, 1, true, false, true);
+    query_iter("cached_6_components_4_terms", EcsQueryCacheAuto, 6, 4, true, false, true);
+    query_iter("cached_8_components_1_term", EcsQueryCacheAuto, 8, 1, true, false, true);
+    query_iter("cached_8_components_4_terms", EcsQueryCacheAuto, 8, 4, true, false, true);
+    query_iter("cached_10_components_1_term", EcsQueryCacheAuto, 10, 1, true, false, true);
+    query_iter("cached_10_components_4_terms", EcsQueryCacheAuto, 10, 4, true, false, true);
+    query_iter("cached_10_components_8_terms", EcsQueryCacheAuto, 10, 8, true, false, true);
+    query_iter("cached_16_components_1_term", EcsQueryCacheAuto, 16, 1, true, false, true);
+    query_iter("cached_16_components_4_terms", EcsQueryCacheAuto, 16, 4, true, false, true);
+    query_iter("cached_16_components_8_terms", EcsQueryCacheAuto, 16, 8, true, false, true);
 
-    query_iter("cached_16_sparse_4_terms", EcsQueryCacheAuto, 16, 4, true, true, true, false);
-    query_iter("cached_16_nofrag_4_terms", EcsQueryCacheAuto, 16, 4, true, true, false, false);
-
-    // Cached with singleton
-    query_iter("cached_16_tags_4_terms_singleton", EcsQueryCacheAuto, 16, 4, false, false, true, true);
+    query_iter("cached_10_sparse_4_terms", EcsQueryCacheAuto, 10, 4, true, true, true);
+    query_iter("cached_10_nofrag_4_terms", EcsQueryCacheAuto, 10, 4, true, true, false);
 
     // Cached empty iter
     query_iter_empty("cached_255_empty_1_fill", 256, EcsQueryCacheAuto);
     query_iter_empty("cached_1023_empty_1_fill", 1024, EcsQueryCacheAuto);
 
     // Cached query iter up
-    query_iter_up("cached_up_8_tags", EcsQueryCacheAuto, false, false);
-    query_iter_up("cached_up_8_tags_w_self", EcsQueryCacheAuto, false, true);
+    query_iter_up("cached_up_tags", EcsQueryCacheAuto, false, false);
+    query_iter_up("cached_up_tags_w_self", EcsQueryCacheAuto, false, true);
 
     // Cached query with variables
     query_w_vars("cached_w_vars", EcsQueryCacheAuto);
+
+    // Cached query with singleton
+    query_w_singleton("cached_w_singleton", EcsQueryCacheAuto);
+
+    // Cached query with not
+    query_w_not("cached_w_not", EcsQueryCacheAuto);
 
     // Cached with toggle
     query_w_cantoggle_no_disabled("cached_cantoggle_no_toggle_1_term", 1);
@@ -1009,7 +1251,8 @@ void query_tests() {
     match_table_w_query("match_100_of_100_queries_8_terms", 8, 100, 100);
 
     // Rematch tables
-    #if true
+    // benchmark is broken in 3.1.0
+    #if FLECS_VERSION_NUMBER != 30100
         rematch_tables("rematch_1_of_1000_tables", 1, 1000);
         rematch_tables("rematch_10_of_1000_tables", 10, 1000);
         rematch_tables("rematch_100_of_1000_tables", 100, 1000);

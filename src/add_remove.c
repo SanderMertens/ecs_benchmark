@@ -150,9 +150,11 @@ void toggle_component(const char* label, int32_t id_count, bool component) {
     ecs_entity_t *ids = create_ids(world, id_count, 4, true, false, true);
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false, false, true);
     
+#if FLECS_VERSION_NUMBER >= 40000
     for (int i = 0; i < id_count; i ++) {
         ecs_add_id(world, ids[i], EcsCanToggle);
     }
+#endif
 
     for (int e = 0; e < ENTITY_COUNT; e ++) {
         for (int i = 0; i < id_count; i ++) {
@@ -238,8 +240,16 @@ void add_remove_tests() {
     add_remove_override("add_remove_override_16", 16);
 
     // Toggle
+#if FLECS_VERSION_NUMBER > 30000
     toggle_component("toggle_16_tags", 16, false);
     toggle_component("toggle_32_tags", 32, false);
     toggle_component("toggle_16_components", 16, true);
     toggle_component("toggle_32_components", 32, true);
+#else
+    // crahes in v3
+    printf("toggle_16_tags\n");
+    printf("toggle_32_tags\n");
+    printf("toggle_16_components\n");
+    printf("toggle_32_components\n");
+#endif
 }

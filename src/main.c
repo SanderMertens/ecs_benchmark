@@ -8,15 +8,17 @@ void baseline(void) {
 }
 
 int main(int argc, char *argv[]) {
+    printf("Flecs version detected: %d\n", FLECS_VERSION_NUMBER);
+    printf("-----------------------------\n\n");
     ecs_os_set_api_defaults(); // Required for timers to work
 
     header_print();
 
     baseline();
 
-    // has_tests();
+    has_tests();
 
-    // get_tests();
+    get_tests();
 
     add_remove_tests();
 

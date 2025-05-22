@@ -1,4 +1,5 @@
 #include "bench.h"
+#include "compat.h"
 
 ecs_entity_t* create_ids(
     ecs_world_t *world, 
