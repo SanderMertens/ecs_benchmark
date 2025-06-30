@@ -43,6 +43,7 @@
     } ecs_query_cache_kind_t;
 
     #define query_terms filter.terms
+    #define query_group_by group_by_id
     #define observer_terms filter.terms
     #define term_trav src.trav
     #define term_trav_flags src.flags
@@ -60,8 +61,16 @@
 
         #define ecs_get_parent(world, entity) ecs_get_target(world, entity, EcsChildOf, 0)
     #endif
+
+    #if FLECS_VERSION_NUMBER < 30212
+    #define ecs_lookup(w, n) ecs_lookup_path(w, 0, n)
+    #endif
+
+    #define ecs_iter_set_group ecs_query_set_group
+    #define flecs_query_trivial_cached_next ecs_query_next
 #else
     #define query_terms terms
+    #define query_group_by group_by
     #define observer_terms query.terms
     #define term_trav trav
     #define term_trav_flags src.id
@@ -83,6 +92,10 @@
     #define ecs_rule_iter ecs_query_iter
     #define ecs_rule_next ecs_query_next
     #define ecs_rule ecs_query
+
+    #if FLECS_VERSION_NUMBER < 40100
+    #define flecs_query_trivial_cached_next ecs_query_next
+    #endif
 #endif
 
 #endif

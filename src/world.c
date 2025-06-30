@@ -20,11 +20,40 @@ void world_init_fini(void) {
 
 void System(ecs_iter_t *it) { }
 
-void world_progress(char *label, int system_count) {
+void world_progress_task(char *label, int system_count) {
     ecs_world_t *world = ecs_init();
 
     for (int i = 0; i < system_count; i ++) {
         ecs_entity_t s = ecs_system(world, {
+            .callback = System
+        });
+
+        ecs_add_pair(world, s, EcsDependsOn, EcsOnUpdate);
+    }
+
+    ecs_progress(world, 1.0);
+
+    bench_t b = bench_begin(label, 1);
+    do {
+        ecs_progress(world, 1.0);
+    } while (bench_next(&b));
+    bench_end(&b);
+    ecs_fini(world);
+}
+
+void world_progress_system(char *label, int system_count, int table_count) {
+    ecs_world_t *world = ecs_init();
+    ecs_id_t id = ecs_new_low_id(world);
+
+    for (int i = 0; i < table_count; i ++) {
+        ecs_entity_t e = ecs_new(world);
+        ecs_add_id(world, e, id);
+        ecs_add_id(world, e, ecs_new(world));
+    }
+
+    for (int i = 0; i < system_count; i ++) {
+        ecs_entity_t s = ecs_system(world, {
+            .query.query_terms[0].id = id,
             .callback = System
         });
 
@@ -117,10 +146,15 @@ void world_tests() {
     world_init_fini();
 
     // Progress
-    world_progress("progress_0_systems", 0);
-    world_progress("progress_1_system", 1);
-    world_progress("progress_10_systems", 10);
-    world_progress("progress_100_systems", 100);
+    world_progress_task("progress_0_tasks", 0);
+    world_progress_task("progress_1_tasks", 1);
+    world_progress_task("progress_10_tasks", 10);
+    world_progress_task("progress_100_tasks", 100);
+
+    world_progress_system("progress_0_systems", 0, 100);
+    world_progress_system("progress_1_systems", 1, 100);
+    world_progress_system("progress_10_systems", 10, 100);
+    world_progress_system("progress_100_systems", 100, 100);
 
     // Create delete table
     create_delete_table("create_delete_table_1_id", 1);

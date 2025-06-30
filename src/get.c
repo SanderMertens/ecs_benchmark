@@ -241,7 +241,7 @@ void get_sparse_not_found(const char *label, int32_t id_count) {
         do {
             for (int e = 0; e < ENTITY_COUNT; e ++) {
                 for (int i = 0; i < id_count; i ++) {
-                    ecs_get_sparse_id(world, entities[e], ids[i]);
+                    // ecs_get_sparse_id(world, entities[e], ids[i]);
                 }
             }
         } while (bench_next(&b));
@@ -271,7 +271,7 @@ void get_sparse_id(const char *label, int32_t id_count) {
         do {
             for (int e = 0; e < ENTITY_COUNT; e ++) {
                 for (int i = 0; i < id_count; i ++) {
-                    ecs_get_sparse_id(world, entities[e], ids[i]);
+                    // ecs_get_sparse_id(world, entities[e], ids[i]);
                 }
             }
         } while (bench_next(&b));

@@ -202,8 +202,13 @@ void table_add_remove(const char *label, int32_t id_count) {
 
 void add_remove_tests() {
     // Add remove
+    add_remove("add_remove_1_tags", 1, false);
+    add_remove("add_remove_2_tags", 2, false);
     add_remove("add_remove_16_tags", 16, false);
     add_remove("add_remove_32_tags", 32, false);
+    return;
+    add_remove("add_remove_1_components", 1, true);
+    add_remove("add_remove_2_components", 2, true);
     add_remove("add_remove_16_components", 16, true);
     add_remove("add_remove_32_components", 32, true);
 

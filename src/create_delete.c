@@ -92,11 +92,9 @@ void create_delete_tree(const char *label, int32_t width, int32_t depth) {
         ecs_entity_t root = ecs_new(world), cur = root;
         for (int i = 0; i < depth; i ++) {
             for (int w = 0; w < width - 1; w ++) {
-                ecs_entity_t e = ecs_new(world);
-                ecs_add_pair(world, e, EcsChildOf, cur);
+                ecs_new_w_pair(world, EcsChildOf, cur);
             }
-            ecs_entity_t e = ecs_new(world);
-            ecs_add_pair(world, e, EcsChildOf, cur);
+            ecs_entity_t e = ecs_new_w_pair(world, EcsChildOf, cur);
             cur = e;
         }
 

@@ -11,10 +11,10 @@
 // run to verify tests don't assert in debug mode
 #define WARMUP_INTERVALS (1)
 #define MEASURE_INTERVAL (1)
-#define MEASURE_TIME (0.05)
+#define MEASURE_TIME (0.001)
 #endif
 
-// #define PRETTY_TIME_FMT
+#define PRETTY_TIME_FMT
 
 typedef struct bench_t {
     // Benchmark state
