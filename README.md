@@ -22,7 +22,7 @@ Installation instructions for bake can be found here:
 https://github.com/SanderMertens/bake
 
 ## Environment
-Benchmarks were measured on a MacBook Pro M1 from 2021, with 64GB RAM
+Benchmarks were measured on a MacBook Pro M4 from 2024, with 48GB RAM
 
 Release: https://github.com/SanderMertens/flecs/releases/tag/v4.1.0
 
