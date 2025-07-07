@@ -191,7 +191,6 @@ void create_delete_tests() {
     create_w_add_in_observer("create_50k_w_add_in_observer", 50 * 1000);
 
     // Create delete
-    create_delete("create_delete_empty", 0, false);
     create_delete("create_delete_1_tag", 1, false);
     create_delete("create_delete_2_tags", 2, false);
     create_delete("create_delete_16_tags", 16, false);
