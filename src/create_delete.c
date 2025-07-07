@@ -222,12 +222,12 @@ void create_delete_tests() {
     // Instantiate prefabs
     instantiate_delete_tree("instantiate_delete_tree_w0_d0", 0, 0, 3);
     instantiate_delete_tree("instantiate_delete_tree_w1_d1", 1, 1, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w5_d1", 3, 1, 3);
+    instantiate_delete_tree("instantiate_delete_tree_w5_d1", 5, 1, 3);
     instantiate_delete_tree("instantiate_delete_tree_w10_d1", 10, 1, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w50_d1", 10, 1, 3);
+    instantiate_delete_tree("instantiate_delete_tree_w50_d1", 50, 1, 3);
     
     instantiate_delete_tree("instantiate_delete_tree_w1_d2", 1, 2, 3);
     instantiate_delete_tree("instantiate_delete_tree_w5_d2", 5, 2, 3);
     instantiate_delete_tree("instantiate_delete_tree_w10_d2", 10, 2, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w50_d2", 10, 2, 3);
+    instantiate_delete_tree("instantiate_delete_tree_w50_d2", 50, 2, 3);
 }
