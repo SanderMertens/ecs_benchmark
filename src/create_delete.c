@@ -201,7 +201,7 @@ void create_delete_tests() {
 
     // Entity init delete
     entity_init_delete("entity_init_delete");
-    entity_init_delete("entity_init_w_name_delete");
+    entity_init_w_name_delete("entity_init_w_name_delete");
 
     // Stresstest for event propagation
     create_children_w_reachable();
