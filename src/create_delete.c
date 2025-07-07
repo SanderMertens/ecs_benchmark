@@ -24,7 +24,7 @@ void create_delete(const char *label, int32_t id_count, bool component) {
 void entity_init_delete(const char *label) {
     ecs_world_t *world = ecs_mini();
 
-    bench_t b = bench_begin(label, 2);
+    bench_t b = bench_begin(label, ENTITY_COUNT * 2);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             ecs_entity_t e = ecs_entity_init(world, &(ecs_entity_desc_t){
@@ -42,7 +42,7 @@ void entity_init_delete(const char *label) {
 void entity_init_w_name_delete(const char *label) {
     ecs_world_t *world = ecs_mini();
 
-    bench_t b = bench_begin(label, 2);
+    bench_t b = bench_begin(label, ENTITY_COUNT * 2);
     do {
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             ecs_entity_t e = ecs_entity_init(world, &(ecs_entity_desc_t){
