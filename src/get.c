@@ -194,7 +194,6 @@ void get_target(const char *label, bool exclusive, bool fragment) {
 void get_parent_not_found(const char *label) {
     ecs_world_t *world = ecs_mini();
     ecs_entity_t *entities = create_ids(world, ENTITY_COUNT, 0, false, false, true);
-    ecs_entity_t *tgts = create_ids(world, 8, 0, false, false, true);
 
     bench_t b = bench_begin(label, ENTITY_COUNT);
     do {
@@ -206,7 +205,6 @@ void get_parent_not_found(const char *label) {
 
     ecs_fini(world);
     ecs_os_free(entities);
-    ecs_os_free(tgts);
 }
 
 void get_parent(const char *label) {
