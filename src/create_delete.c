@@ -105,7 +105,7 @@ void create_delete_tree(const char *label, int32_t width, int32_t depth) {
     ecs_fini(world);
 }
 
-void instantiate_delete_tree(const char *label, int32_t width, int32_t depth, int32_t components) {
+void instantiate_delete_tree(const char *label, int32_t width, int32_t depth, int32_t components, bool inherit) {
     ecs_world_t *world = ecs_mini();
 
     ecs_id_t *ids = create_ids(world, components, 4, true, false, true);
@@ -116,6 +116,7 @@ void instantiate_delete_tree(const char *label, int32_t width, int32_t depth, in
 
     ecs_entity_t root = ecs_new_w_id(world, EcsPrefab), cur = root;
     for (int c = 0; c < components; c ++) {
+        if (inherit) ecs_add_pair(world, ids[c], EcsOnInstantiate, EcsInherit);
         ecs_add_id(world, root, ids[c]);
     }
 
@@ -220,14 +221,25 @@ void create_delete_tests() {
     create_delete_tree("create_delete_tree_w100_d100", 100, 100);
 
     // Instantiate prefabs
-    instantiate_delete_tree("instantiate_delete_tree_w0_d0", 0, 0, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w1_d1", 1, 1, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w5_d1", 5, 1, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w10_d1", 10, 1, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w50_d1", 50, 1, 3);
-    
-    instantiate_delete_tree("instantiate_delete_tree_w1_d2", 1, 2, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w5_d2", 5, 2, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w10_d2", 10, 2, 3);
-    instantiate_delete_tree("instantiate_delete_tree_w50_d2", 50, 2, 3);
+    instantiate_delete_tree("instantiate_override_0_components", 0, 0, 0, false);
+    instantiate_delete_tree("instantiate_override_1_components", 0, 0, 1, false);
+    instantiate_delete_tree("instantiate_override_8_components", 0, 0, 8, false);
+    instantiate_delete_tree("instantiate_override_32_components", 0, 0, 32, false);
+    instantiate_delete_tree("instantiate_override_64_components", 0, 0, 64, false);
+
+    instantiate_delete_tree("instantiate_inherit_0_components", 0, 0, 0, true);
+    instantiate_delete_tree("instantiate_inherit_1_components", 0, 0, 1, true);
+    instantiate_delete_tree("instantiate_inherit_8_components", 0, 0, 8, true);
+    instantiate_delete_tree("instantiate_inherit_32_components", 0, 0, 32, true);
+    instantiate_delete_tree("instantiate_inherit_64_components", 0, 0, 64, true);
+
+    instantiate_delete_tree("instantiate_tree_w0_d0", 0, 0, 3, false);
+    instantiate_delete_tree("instantiate_tree_w1_d1", 1, 1, 3, false);
+    instantiate_delete_tree("instantiate_tree_w5_d1", 5, 1, 3, false);
+    instantiate_delete_tree("instantiate_tree_w10_d1", 10, 1, 3, false);
+    instantiate_delete_tree("instantiate_tree_w50_d1", 50, 1, 3, false);
+    instantiate_delete_tree("instantiate_tree_w1_d2", 1, 2, 3, false);
+    instantiate_delete_tree("instantiate_tree_w5_d2", 5, 2, 3, false);
+    instantiate_delete_tree("instantiate_tree_w10_d2", 10, 2, 3, false);
+    instantiate_delete_tree("instantiate_tree_w50_d2", 50, 2, 3, false);
 }

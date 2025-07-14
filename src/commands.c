@@ -39,7 +39,7 @@ void ensure_remove_cmd(const char* label, int32_t id_count) {
         ecs_defer_begin(world);
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < id_count; i ++) {
-                ecs_ensure_id(world, entities[e], ids[i]);
+                ecs_ensure_id(world, entities[e], ids[i], 4);
             }
         }
         ecs_defer_end(world);
@@ -68,7 +68,7 @@ void ensure_cmd(const char* label, int32_t id_count) {
         ecs_defer_begin(world);
         for (int e = 0; e < ENTITY_COUNT; e ++) {
             for (int i = 0; i < id_count; i ++) {
-                ecs_ensure_id(world, entities[e], ids[i]);
+                ecs_ensure_id(world, entities[e], ids[i], 4);
             }
         }
         ecs_defer_end(world);

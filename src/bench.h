@@ -14,7 +14,7 @@
 #define MEASURE_TIME (0.001)
 #endif
 
-#define PRETTY_TIME_FMT
+// #define PRETTY_TIME_FMT
 
 typedef struct bench_t {
     // Benchmark state
