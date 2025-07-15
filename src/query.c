@@ -1699,28 +1699,17 @@ void query_tests() {
     query_iter("cached_16_tags_4_terms", EcsQueryCacheAuto, 16, 4, false, false, true);
     query_iter("cached_16_tags_8_terms", EcsQueryCacheAuto, 16, 8, false, false, true);
 
-    query_iter("cached_6_components_1_term", EcsQueryCacheAuto, 6, 1, true, false, true);
-    query_iter("cached_6_components_4_terms", EcsQueryCacheAuto, 6, 4, true, false, true);
-    query_iter("cached_8_components_1_term", EcsQueryCacheAuto, 8, 1, true, false, true);
-    query_iter("cached_8_components_4_terms", EcsQueryCacheAuto, 8, 4, true, false, true);
-    query_iter("cached_10_components_1_term", EcsQueryCacheAuto, 10, 1, true, false, true);
-    query_iter("cached_10_components_4_terms", EcsQueryCacheAuto, 10, 4, true, false, true);
-    query_iter("cached_10_components_8_terms", EcsQueryCacheAuto, 10, 8, true, false, true);
-    query_iter("cached_16_components_1_term", EcsQueryCacheAuto, 16, 1, true, false, true);
-    query_iter("cached_16_components_4_terms", EcsQueryCacheAuto, 16, 4, true, false, true);
-    query_iter("cached_16_components_8_terms", EcsQueryCacheAuto, 16, 8, true, false, true);
-
     // Cached query iter where the entire component array is read
-    query_iter_read_1("cached_6_read_1_term", EcsQueryCacheAuto, 6);
-    query_iter_read_4("cached_6_read_4_terms", EcsQueryCacheAuto, 6);
-    query_iter_read_1("cached_8_read_1_term", EcsQueryCacheAuto, 8);
-    query_iter_read_4("cached_8_read_4_terms", EcsQueryCacheAuto, 8);
-    query_iter_read_1("cached_10_read_1_term", EcsQueryCacheAuto, 10);
-    query_iter_read_4("cached_10_read_4_terms", EcsQueryCacheAuto, 10);
-    query_iter_read_8("cached_10_read_8_terms", EcsQueryCacheAuto, 10);
-    query_iter_read_1("cached_16_read_1_term", EcsQueryCacheAuto, 16);
-    query_iter_read_4("cached_16_read_4_terms", EcsQueryCacheAuto, 16);
-    query_iter_read_8("cached_16_read_8_terms", EcsQueryCacheAuto, 16);
+    query_iter_read_1("cached_6_components_1_term", EcsQueryCacheAuto, 6);
+    query_iter_read_4("cached_6_components_4_terms", EcsQueryCacheAuto, 6);
+    query_iter_read_1("cached_8_components_1_term", EcsQueryCacheAuto, 8);
+    query_iter_read_4("cached_8_components_4_terms", EcsQueryCacheAuto, 8);
+    query_iter_read_1("cached_10_components_1_term", EcsQueryCacheAuto, 10);
+    query_iter_read_4("cached_10_components_4_terms", EcsQueryCacheAuto, 10);
+    query_iter_read_8("cached_10_components_8_terms", EcsQueryCacheAuto, 10);
+    query_iter_read_1("cached_16_components_1_term", EcsQueryCacheAuto, 16);
+    query_iter_read_4("cached_16_components_4_terms", EcsQueryCacheAuto, 16);
+    query_iter_read_8("cached_16_components_8_terms", EcsQueryCacheAuto, 16);
 
     query_iter("cached_10_sparse_4_terms", EcsQueryCacheAuto, 10, 4, true, true, true);
     query_iter("cached_10_nofrag_4_terms", EcsQueryCacheAuto, 10, 4, true, true, false);
